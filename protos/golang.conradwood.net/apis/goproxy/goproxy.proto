@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package goproxy;
+option java_package = "net.conradwood.apis.goproxy";
+import "golang.conradwood.net/apis/common/common.proto";
+
+// comment: message pingresponse
+message PingResponse {
+  // comment: field pingresponse.response
+  string Response = 1;
+}
+
+// comment: echoservice description
+service GoProxy {
+  // comment: rpc ping
+  rpc Ping(common.Void) returns (PingResponse);
+}
+
+
