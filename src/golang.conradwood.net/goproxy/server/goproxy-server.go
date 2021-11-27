@@ -30,7 +30,7 @@ func main() {
 	fmt.Printf("Starting GoProxyServer...\n")
 	gopr = &goproxy.Goproxy{}
 	gopr.Cacher = &cacher.GoCacher{}
-	gopr.GoBinEnv = make([]string, 0)
+	gopr.GoBinEnv = goenv()
 	//	gopr.Cacher = nil
 	go func() {
 		adr := fmt.Sprintf(":%d", *http_port)
@@ -53,6 +53,14 @@ func main() {
 	err = server.ServerStartup(sd)
 	utils.Bail("Unable to start server", err)
 	os.Exit(0)
+}
+
+func goenv() []string {
+	res := []string{
+		"GOPATH=/tmp/src",
+		"PATH=/opt/yacloud/ctools/dev/bin:/opt/yacloud/ctools/dev/go/current/protoc:/opt/yacloud/ctools/dev/go/current/go/bin:/sbin:/usr/sbin:/bin:/sbin:/usr/sbin:/usr/bin",
+	}
+	return res
 }
 
 /************************************
