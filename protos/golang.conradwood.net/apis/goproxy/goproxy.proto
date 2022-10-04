@@ -5,10 +5,14 @@ option java_package = "net.conradwood.apis.goproxy";
 import "golang.conradwood.net/apis/common/common.proto";
 import "golang.conradwood.net/apis/h2gproxy/h2gproxy.proto";
 
-// comment: message pingresponse
-message PingResponse {
-  // comment: field pingresponse.response
-  string Response = 1;
+message CachedModule {
+  uint64 ID=1;
+  string Path=2;
+  string Version=3;
+  string Suffix=4;
+  string Key=5;
+  uint32 Created=6;
+  uint32 LastUsed=7;
 }
 
 message ModuleInfoRequest {
@@ -38,8 +42,6 @@ message VersionInfo {
  3. Modules from external builds (e.g. github)
 */
 service GoProxy {
-  // comment: rpc ping
-  rpc Ping(common.Void) returns (PingResponse);
   // h2gproxy endpoint
   rpc StreamHTTP(h2gproxy.StreamRequest) returns (stream h2gproxy.StreamDataResponse);
   rpc AnalyseURL(ModuleInfoRequest) returns (ModuleInfo);
