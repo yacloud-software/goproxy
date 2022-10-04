@@ -82,7 +82,7 @@ func parseIDFromString(v string) (uint64, error) {
 	if len(sx) != 3 {
 		return 0, fmt.Errorf("invalid string \"%s\" (%d)\n", v, len(sx))
 	}
-	res, err := strconv.ParseUint(sx[1], 10, 64)
+	res, err := strconv.ParseUint(sx[2], 10, 64)
 	if err != nil {
 		return 0, err
 	}
@@ -93,8 +93,8 @@ func (ph *protoHandler) GetZip(ctx context.Context, w io.Writer, v string) error
 	if err != nil {
 		return err
 	}
-	fmt.Printf("Getting proto zip for package \"%s\", version \"%d\"\n", ph.pack.Name, ph.version.Version)
-	fmt.Printf("Requested version: \"%d\", current version: \"%d\"\n", ph.version.Version, vid)
+	//	fmt.Printf("Getting proto zip for package \"%s\", version \"%d\"\n", ph.pack.Name, ph.version.Version)
+	fmt.Printf("Requested version: \"%d\", current version: \"%d\"\n", vid, ph.version.Version)
 	if ph.version.Version != vid {
 		s := fmt.Sprintf("proto in version %d is not available (current version is %d)", vid, ph.version.Version)
 		return errors.InvalidArgs(ctx, s, s)

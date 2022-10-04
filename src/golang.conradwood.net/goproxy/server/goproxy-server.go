@@ -5,20 +5,18 @@ import (
 	"flag"
 	"fmt"
 	"github.com/goproxy/goproxy"
-	"golang.conradwood.net/apis/common"
 	pb "golang.conradwood.net/apis/goproxy"
 	hg "golang.conradwood.net/apis/h2gproxy"
 	"golang.conradwood.net/go-easyops/auth"
 	"golang.conradwood.net/go-easyops/errors"
 	"golang.conradwood.net/go-easyops/server"
 	"golang.conradwood.net/go-easyops/utils"
+	"golang.conradwood.net/goproxy/cacher"
+	"golang.conradwood.net/goproxy/handlers"
+	"google.golang.org/grpc"
+	"os"
 	"sort"
 	"strings"
-	//"golang.conradwood.net/goproxy/cacher"
-	"google.golang.org/grpc"
-	//"net/http"
-	"golang.conradwood.net/goproxy/handlers"
-	"os"
 )
 
 var (
@@ -75,10 +73,6 @@ func goenv() []string {
 * grpc functions
 ************************************/
 
-func (e *echoServer) Ping(ctx context.Context, req *common.Void) (*pb.PingResponse, error) {
-	resp := &pb.PingResponse{Response: "pingresponse"}
-	return resp, nil
-}
 func (e *echoServer) AnalyseURL(ctx context.Context, req *pb.ModuleInfoRequest) (*pb.ModuleInfo, error) {
 	return nil, nil
 }
@@ -147,7 +141,7 @@ func (e *echoServer) StreamHTTP(req *hg.StreamRequest, srv pb.GoProxy_StreamHTTP
 		err = errors.InvalidArgs(ctx, "invalid path", "invalid path \"%s\"", req.Path)
 	}
 	if err != nil {
-		fmt.Printf("Error: %s\n", err)
+		fmt.Printf("Error for \"%s\": %s\n", req.Path, err)
 		return err
 	}
 	return nil
@@ -169,7 +163,7 @@ func versionFromPath(ctx context.Context, path string) (string, error) {
 	return version_string, nil
 }
 
-// serve requests suffixed by /@v/[version].zip
+// serve requests suffixed by /@v/[version].mod
 func serveMod(handler handlers.Handler, req *hg.StreamRequest, srv pb.GoProxy_StreamHTTPServer) error {
 	ctx := srv.Context()
 	version_string, err := versionFromPath(ctx, req.Path)
@@ -177,6 +171,13 @@ func serveMod(handler handlers.Handler, req *hg.StreamRequest, srv pb.GoProxy_St
 		return err
 	}
 	fmt.Printf("Version: \"%s\"\n", version_string)
+	nc, err := cacher.NewCacher(ctx, req.Path, version_string, "mod")
+	if err != nil {
+		return err
+	}
+	if nc.IsAvailable(ctx) {
+		panic("cached already")
+	}
 	b, err := handler.GetMod(ctx, version_string)
 	if err != nil {
 		return err
@@ -190,6 +191,13 @@ func serveZip(handler handlers.Handler, req *hg.StreamRequest, srv pb.GoProxy_St
 	version_string, err := versionFromPath(ctx, req.Path)
 	if err != nil {
 		return err
+	}
+	nc, err := cacher.NewCacher(ctx, req.Path, version_string, "zip")
+	if err != nil {
+		return err
+	}
+	if nc.IsAvailable(ctx) {
+		panic("cached already")
 	}
 	fmt.Printf("Version: \"%s\"\n", version_string)
 	sw := NewStreamWriter(srv)
