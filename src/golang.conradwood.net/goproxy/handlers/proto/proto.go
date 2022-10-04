@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"golang.conradwood.net/apis/common"
+	gom "golang.conradwood.net/apis/gomodule"
 	pb "golang.conradwood.net/apis/goproxy"
 	pr "golang.conradwood.net/apis/protorenderer"
 	//	"golang.conradwood.net/go-easyops/errors"
@@ -16,6 +17,7 @@ import (
 )
 
 var (
+	use_gomodule_to_serve    = flag.Bool("use_gomodule_to_serve_proto_zips", true, "if true, we serve all proto zip files from gomodule")
 	debug                    = flag.Bool("debug_proto", false, "debug proto stuff")
 	WELL_KNOWN_PATH_PREFIXES = []string{
 		"golang.conradwood.net/apis",
@@ -81,6 +83,30 @@ func (ph *protoHandler) GetVersion(ctx context.Context, v string) (*pb.VersionIn
 }
 
 func (ph *protoHandler) GetZip(ctx context.Context, w io.Writer, version string) error {
+	if *use_gomodule_to_serve {
+		pr := &gom.ProtoRequest{
+			PackageName: ph.path,
+			Version:     version,
+		}
+		srv, err := gom.GetGoModuleClient().GetProtoZip(ctx, pr)
+		if err != nil {
+			return err
+		}
+		for {
+			r, err := srv.Recv()
+			if err != nil {
+				if err == io.EOF {
+					break
+				}
+				return err
+			}
+			_, err = w.Write(r.Data)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	}
 	vid, err := hh.ParseIDFromString(version)
 	if err != nil {
 		return err

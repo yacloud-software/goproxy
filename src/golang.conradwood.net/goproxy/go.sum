@@ -219,6 +219,8 @@ golang.conradwood.net/apis/errorlogger v1.1.1861 h1:H/sp5bFlG5nGXnF/FtcdZaOfg8lR
 golang.conradwood.net/apis/errorlogger v1.1.1861/go.mod h1:+eKYK50e04sTKr9qD9U44eztaeMSafHkzfjejBdMaqw=
 golang.conradwood.net/apis/framework v1.1.1861 h1:6xbG+W1eeKVk2XU216q7ZPyvqGGRT8jrOdYpECCQqVk=
 golang.conradwood.net/apis/framework v1.1.1861/go.mod h1:aakclkFxoK6Rwfb6wWbfyCPRiWsAZM94xYz69Y9fid4=
+golang.conradwood.net/apis/gomodule v1.1.1880 h1:foVCMXvNqonyiqSrpfryrDPfY2T8rBNs05tUmbRE188=
+golang.conradwood.net/apis/gomodule v1.1.1880/go.mod h1:hICMSUMMcPCnnCHLIqTZnSmx+p0b6LsWXeWlIhjvrcc=
 golang.conradwood.net/apis/goproxy v1.1.1877 h1:NeplvIMb+RC5WQukwonCIrfW2iHgTMXk3yID9jGcnUE=
 golang.conradwood.net/apis/goproxy v1.1.1877/go.mod h1:ctvLV0NykXrzK6Qf6QCLb65DwK9ZJeq00ZlmzZvIEII=
 golang.conradwood.net/apis/h2gproxy v1.1.1877 h1:JLgb1HVWYL2H76RB02+05ylBSwLTgqviNS92H9EhJps=
