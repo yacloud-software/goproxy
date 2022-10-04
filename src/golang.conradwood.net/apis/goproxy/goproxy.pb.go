@@ -10,6 +10,9 @@ It is generated from these files:
 
 It has these top-level messages:
 	PingResponse
+	ModuleInfoRequest
+	ModuleInfo
+	VersionInfo
 */
 package goproxy
 
@@ -17,6 +20,7 @@ import proto "github.com/golang/protobuf/proto"
 import fmt "fmt"
 import math "math"
 import common "golang.conradwood.net/apis/common"
+import h2gproxy "golang.conradwood.net/apis/h2gproxy"
 
 import (
 	context "golang.org/x/net/context"
@@ -33,6 +37,33 @@ var _ = math.Inf
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+
+type MODULETYPE int32
+
+const (
+	MODULETYPE_UNKNOWN        MODULETYPE = 0
+	MODULETYPE_PROTO          MODULETYPE = 2
+	MODULETYPE_LOCALMODULE    MODULETYPE = 3
+	MODULETYPE_EXTERNALMODULE MODULETYPE = 4
+)
+
+var MODULETYPE_name = map[int32]string{
+	0: "UNKNOWN",
+	2: "PROTO",
+	3: "LOCALMODULE",
+	4: "EXTERNALMODULE",
+}
+var MODULETYPE_value = map[string]int32{
+	"UNKNOWN":        0,
+	"PROTO":          2,
+	"LOCALMODULE":    3,
+	"EXTERNALMODULE": 4,
+}
+
+func (x MODULETYPE) String() string {
+	return proto.EnumName(MODULETYPE_name, int32(x))
+}
+func (MODULETYPE) EnumDescriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
 
 // comment: message pingresponse
 type PingResponse struct {
@@ -52,8 +83,76 @@ func (m *PingResponse) GetResponse() string {
 	return ""
 }
 
+type ModuleInfoRequest struct {
+	URL string `protobuf:"bytes,1,opt,name=URL" json:"URL,omitempty"`
+}
+
+func (m *ModuleInfoRequest) Reset()                    { *m = ModuleInfoRequest{} }
+func (m *ModuleInfoRequest) String() string            { return proto.CompactTextString(m) }
+func (*ModuleInfoRequest) ProtoMessage()               {}
+func (*ModuleInfoRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
+
+func (m *ModuleInfoRequest) GetURL() string {
+	if m != nil {
+		return m.URL
+	}
+	return ""
+}
+
+type ModuleInfo struct {
+	ModuleType MODULETYPE `protobuf:"varint,1,opt,name=ModuleType,enum=goproxy.MODULETYPE" json:"ModuleType,omitempty"`
+	Exists     bool       `protobuf:"varint,2,opt,name=Exists" json:"Exists,omitempty"`
+}
+
+func (m *ModuleInfo) Reset()                    { *m = ModuleInfo{} }
+func (m *ModuleInfo) String() string            { return proto.CompactTextString(m) }
+func (*ModuleInfo) ProtoMessage()               {}
+func (*ModuleInfo) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{2} }
+
+func (m *ModuleInfo) GetModuleType() MODULETYPE {
+	if m != nil {
+		return m.ModuleType
+	}
+	return MODULETYPE_UNKNOWN
+}
+
+func (m *ModuleInfo) GetExists() bool {
+	if m != nil {
+		return m.Exists
+	}
+	return false
+}
+
+type VersionInfo struct {
+	Version   uint64 `protobuf:"varint,1,opt,name=Version" json:"Version,omitempty"`
+	BuildTime uint32 `protobuf:"varint,2,opt,name=BuildTime" json:"BuildTime,omitempty"`
+}
+
+func (m *VersionInfo) Reset()                    { *m = VersionInfo{} }
+func (m *VersionInfo) String() string            { return proto.CompactTextString(m) }
+func (*VersionInfo) ProtoMessage()               {}
+func (*VersionInfo) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{3} }
+
+func (m *VersionInfo) GetVersion() uint64 {
+	if m != nil {
+		return m.Version
+	}
+	return 0
+}
+
+func (m *VersionInfo) GetBuildTime() uint32 {
+	if m != nil {
+		return m.BuildTime
+	}
+	return 0
+}
+
 func init() {
 	proto.RegisterType((*PingResponse)(nil), "goproxy.PingResponse")
+	proto.RegisterType((*ModuleInfoRequest)(nil), "goproxy.ModuleInfoRequest")
+	proto.RegisterType((*ModuleInfo)(nil), "goproxy.ModuleInfo")
+	proto.RegisterType((*VersionInfo)(nil), "goproxy.VersionInfo")
+	proto.RegisterEnum("goproxy.MODULETYPE", MODULETYPE_name, MODULETYPE_value)
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -69,6 +168,9 @@ const _ = grpc.SupportPackageIsVersion4
 type GoProxyClient interface {
 	// comment: rpc ping
 	Ping(ctx context.Context, in *common.Void, opts ...grpc.CallOption) (*PingResponse, error)
+	// h2gproxy endpoint
+	StreamHTTP(ctx context.Context, in *h2gproxy.StreamRequest, opts ...grpc.CallOption) (GoProxy_StreamHTTPClient, error)
+	AnalyseURL(ctx context.Context, in *ModuleInfoRequest, opts ...grpc.CallOption) (*ModuleInfo, error)
 }
 
 type goProxyClient struct {
@@ -88,11 +190,55 @@ func (c *goProxyClient) Ping(ctx context.Context, in *common.Void, opts ...grpc.
 	return out, nil
 }
 
+func (c *goProxyClient) StreamHTTP(ctx context.Context, in *h2gproxy.StreamRequest, opts ...grpc.CallOption) (GoProxy_StreamHTTPClient, error) {
+	stream, err := grpc.NewClientStream(ctx, &_GoProxy_serviceDesc.Streams[0], c.cc, "/goproxy.GoProxy/StreamHTTP", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &goProxyStreamHTTPClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type GoProxy_StreamHTTPClient interface {
+	Recv() (*h2gproxy.StreamDataResponse, error)
+	grpc.ClientStream
+}
+
+type goProxyStreamHTTPClient struct {
+	grpc.ClientStream
+}
+
+func (x *goProxyStreamHTTPClient) Recv() (*h2gproxy.StreamDataResponse, error) {
+	m := new(h2gproxy.StreamDataResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func (c *goProxyClient) AnalyseURL(ctx context.Context, in *ModuleInfoRequest, opts ...grpc.CallOption) (*ModuleInfo, error) {
+	out := new(ModuleInfo)
+	err := grpc.Invoke(ctx, "/goproxy.GoProxy/AnalyseURL", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // Server API for GoProxy service
 
 type GoProxyServer interface {
 	// comment: rpc ping
 	Ping(context.Context, *common.Void) (*PingResponse, error)
+	// h2gproxy endpoint
+	StreamHTTP(*h2gproxy.StreamRequest, GoProxy_StreamHTTPServer) error
+	AnalyseURL(context.Context, *ModuleInfoRequest) (*ModuleInfo, error)
 }
 
 func RegisterGoProxyServer(s *grpc.Server, srv GoProxyServer) {
@@ -117,6 +263,45 @@ func _GoProxy_Ping_Handler(srv interface{}, ctx context.Context, dec func(interf
 	return interceptor(ctx, in, info, handler)
 }
 
+func _GoProxy_StreamHTTP_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(h2gproxy.StreamRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(GoProxyServer).StreamHTTP(m, &goProxyStreamHTTPServer{stream})
+}
+
+type GoProxy_StreamHTTPServer interface {
+	Send(*h2gproxy.StreamDataResponse) error
+	grpc.ServerStream
+}
+
+type goProxyStreamHTTPServer struct {
+	grpc.ServerStream
+}
+
+func (x *goProxyStreamHTTPServer) Send(m *h2gproxy.StreamDataResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func _GoProxy_AnalyseURL_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ModuleInfoRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GoProxyServer).AnalyseURL(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/goproxy.GoProxy/AnalyseURL",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GoProxyServer).AnalyseURL(ctx, req.(*ModuleInfoRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _GoProxy_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "goproxy.GoProxy",
 	HandlerType: (*GoProxyServer)(nil),
@@ -125,8 +310,18 @@ var _GoProxy_serviceDesc = grpc.ServiceDesc{
 			MethodName: "Ping",
 			Handler:    _GoProxy_Ping_Handler,
 		},
+		{
+			MethodName: "AnalyseURL",
+			Handler:    _GoProxy_AnalyseURL_Handler,
+		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "StreamHTTP",
+			Handler:       _GoProxy_StreamHTTP_Handler,
+			ServerStreams: true,
+		},
+	},
 	Metadata: "protos/golang.conradwood.net/apis/goproxy/goproxy.proto",
 }
 
@@ -135,16 +330,31 @@ func init() {
 }
 
 var fileDescriptor0 = []byte{
-	// 168 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0xe2, 0x32, 0x2f, 0x28, 0xca, 0x2f,
-	0xc9, 0x2f, 0xd6, 0x4f, 0xcf, 0xcf, 0x49, 0xcc, 0x4b, 0xd7, 0x4b, 0xce, 0xcf, 0x2b, 0x4a, 0x4c,
-	0x29, 0xcf, 0xcf, 0x4f, 0xd1, 0xcb, 0x4b, 0x2d, 0xd1, 0x4f, 0x2c, 0xc8, 0x04, 0x49, 0x15, 0x14,
-	0xe5, 0x57, 0x54, 0xc2, 0x68, 0x3d, 0xb0, 0x0e, 0x21, 0x76, 0x28, 0x57, 0x4a, 0x0f, 0x8f, 0xd6,
-	0xe4, 0xfc, 0xdc, 0xdc, 0xfc, 0x3c, 0x28, 0x05, 0xd1, 0xa8, 0xa4, 0xc5, 0xc5, 0x13, 0x90, 0x99,
-	0x97, 0x1e, 0x94, 0x5a, 0x5c, 0x90, 0x9f, 0x57, 0x9c, 0x2a, 0x24, 0xc5, 0xc5, 0x01, 0x63, 0x4b,
-	0x30, 0x2a, 0x30, 0x6a, 0x70, 0x06, 0xc1, 0xf9, 0x46, 0x66, 0x5c, 0xec, 0xee, 0xf9, 0x01, 0x20,
-	0x6b, 0x84, 0xb4, 0xb9, 0x58, 0x40, 0xda, 0x84, 0x78, 0xf4, 0xa0, 0xa6, 0x85, 0xe5, 0x67, 0xa6,
-	0x48, 0x89, 0xea, 0xc1, 0x5c, 0x85, 0x6c, 0xa6, 0x93, 0x2c, 0x97, 0x74, 0x5e, 0x6a, 0x09, 0xb2,
-	0x93, 0x40, 0xce, 0x81, 0xa9, 0x4d, 0x62, 0x03, 0xbb, 0xc4, 0x18, 0x10, 0x00, 0x00, 0xff, 0xff,
-	0x63, 0xf5, 0xda, 0x50, 0xfd, 0x00, 0x00, 0x00,
+	// 407 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0x7c, 0x52, 0xdf, 0x6f, 0x94, 0x40,
+	0x10, 0x96, 0xf6, 0x2c, 0xbd, 0xb9, 0x5a, 0x71, 0x1a, 0xf5, 0x82, 0x35, 0x69, 0x48, 0x4c, 0x9a,
+	0x9a, 0x50, 0x43, 0x1f, 0x7c, 0xf2, 0xa1, 0xb5, 0x44, 0x1b, 0x29, 0x90, 0x15, 0x4e, 0xef, 0x11,
+	0x8f, 0x15, 0x49, 0x60, 0x17, 0x59, 0x2e, 0xde, 0xfd, 0x6f, 0xfe, 0x71, 0x86, 0x1f, 0x0b, 0xe7,
+	0xa5, 0xb9, 0xa7, 0x9d, 0x6f, 0xe6, 0x9b, 0x6f, 0x33, 0xdf, 0x0c, 0xbc, 0x2f, 0x4a, 0x5e, 0x71,
+	0x71, 0x99, 0xf0, 0x2c, 0x62, 0x89, 0xb9, 0xe0, 0xac, 0x8c, 0xe2, 0x3f, 0x9c, 0xc7, 0x26, 0xa3,
+	0xd5, 0x65, 0x54, 0xa4, 0x75, 0xa9, 0x28, 0xf9, 0x6a, 0x2d, 0x5f, 0xb3, 0xe9, 0x40, 0xb5, 0x83,
+	0xba, 0xb9, 0xa3, 0x75, 0xc1, 0xf3, 0x9c, 0xb3, 0xee, 0x69, 0x1b, 0x75, 0x6b, 0x07, 0xff, 0x97,
+	0x95, 0xb4, 0x7f, 0xc9, 0xa0, 0xed, 0x31, 0x2e, 0xe0, 0xc8, 0x4f, 0x59, 0x42, 0xa8, 0x28, 0x38,
+	0x13, 0x14, 0x75, 0x38, 0x94, 0xf1, 0x54, 0x39, 0x53, 0xce, 0xc7, 0xa4, 0xc7, 0xc6, 0x1b, 0x78,
+	0x76, 0xcf, 0xe3, 0x65, 0x46, 0xef, 0xd8, 0x4f, 0x4e, 0xe8, 0xef, 0x25, 0x15, 0x15, 0x6a, 0xb0,
+	0x1f, 0x12, 0xa7, 0xe3, 0xd6, 0xa1, 0x31, 0x07, 0x18, 0x68, 0x78, 0x25, 0x51, 0xb0, 0x2e, 0x5a,
+	0xc9, 0x63, 0xeb, 0xc4, 0x94, 0x13, 0xdf, 0x7b, 0xb7, 0xa1, 0x63, 0x07, 0x73, 0xdf, 0x26, 0x1b,
+	0x34, 0x7c, 0x01, 0x07, 0xf6, 0x2a, 0x15, 0x95, 0x98, 0xee, 0x9d, 0x29, 0xe7, 0x87, 0xa4, 0x43,
+	0x86, 0x0d, 0x93, 0x19, 0x2d, 0x45, 0xca, 0x59, 0xa3, 0x3d, 0x05, 0xb5, 0x83, 0x8d, 0xf0, 0x88,
+	0x48, 0x88, 0xa7, 0x30, 0xbe, 0x59, 0xa6, 0x59, 0x1c, 0xa4, 0x39, 0x6d, 0x34, 0x9e, 0x90, 0x21,
+	0x71, 0x71, 0x07, 0x30, 0x7c, 0x8c, 0x13, 0x50, 0x43, 0xf7, 0x8b, 0xeb, 0x7d, 0x73, 0xb5, 0x47,
+	0x38, 0x86, 0xc7, 0x3e, 0xf1, 0x02, 0x4f, 0xdb, 0xc3, 0xa7, 0x30, 0x71, 0xbc, 0x8f, 0xd7, 0x4e,
+	0x4b, 0xd5, 0xf6, 0x11, 0xe1, 0xd8, 0xfe, 0x1e, 0xd8, 0xc4, 0xed, 0x73, 0x23, 0xeb, 0xaf, 0x02,
+	0xea, 0x27, 0xee, 0xd7, 0xc3, 0xe0, 0x5b, 0x18, 0xd5, 0x5e, 0xe2, 0x91, 0xd9, 0xad, 0x65, 0xc6,
+	0xd3, 0x58, 0x7f, 0xde, 0x0f, 0xfb, 0x9f, 0xd1, 0x36, 0xc0, 0xd7, 0xaa, 0xa4, 0x51, 0xfe, 0x39,
+	0x08, 0x7c, 0x7c, 0x69, 0xf6, 0x7b, 0x69, 0xb3, 0x9d, 0xbd, 0xfa, 0xe9, 0x76, 0xe1, 0x36, 0xaa,
+	0x22, 0x29, 0xf2, 0x4e, 0xc1, 0x0f, 0x00, 0xd7, 0x2c, 0xca, 0xd6, 0x82, 0x86, 0xc4, 0x41, 0x7d,
+	0x30, 0x76, 0x7b, 0x51, 0xfa, 0xc9, 0x03, 0xb5, 0x9b, 0xd7, 0xf0, 0x8a, 0xd1, 0x6a, 0xf3, 0x62,
+	0xea, 0x6b, 0x91, 0xcc, 0x1f, 0x07, 0xcd, 0x91, 0x5c, 0xfd, 0x0b, 0x00, 0x00, 0xff, 0xff, 0x70,
+	0x35, 0x97, 0x00, 0xcc, 0x02, 0x00, 0x00,
 }

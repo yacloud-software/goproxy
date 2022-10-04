@@ -26,7 +26,9 @@ require (
 	golang.conradwood.net/apis/echoservice v1.1.1861 // indirect
 	golang.conradwood.net/apis/errorlogger v1.1.1861 // indirect
 	golang.conradwood.net/apis/framework v1.1.1861 // indirect
+	golang.conradwood.net/apis/h2gproxy v1.1.1877 // indirect
 	golang.conradwood.net/apis/objectstore v1.1.1861 // indirect
+	golang.conradwood.net/apis/protorenderer v1.1.1877 // indirect
 	golang.conradwood.net/apis/registry v1.1.1861 // indirect
 	golang.conradwood.net/apis/rpcinterceptor v1.1.1861 // indirect
 	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9 // indirect
@@ -38,4 +40,5 @@ require (
 	google.golang.org/genproto v0.0.0-20220921223823-23cae91e6737 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 )
+
 replace golang.conradwood.net/apis/goproxy => ../../golang.conradwood.net/apis/goproxy

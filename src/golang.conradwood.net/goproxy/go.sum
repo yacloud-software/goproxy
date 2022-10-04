@@ -217,8 +217,12 @@ golang.conradwood.net/apis/framework v1.1.1861 h1:6xbG+W1eeKVk2XU216q7ZPyvqGGRT8
 golang.conradwood.net/apis/framework v1.1.1861/go.mod h1:aakclkFxoK6Rwfb6wWbfyCPRiWsAZM94xYz69Y9fid4=
 golang.conradwood.net/apis/goproxy v1.1.1877 h1:NeplvIMb+RC5WQukwonCIrfW2iHgTMXk3yID9jGcnUE=
 golang.conradwood.net/apis/goproxy v1.1.1877/go.mod h1:ctvLV0NykXrzK6Qf6QCLb65DwK9ZJeq00ZlmzZvIEII=
+golang.conradwood.net/apis/h2gproxy v1.1.1877 h1:JLgb1HVWYL2H76RB02+05ylBSwLTgqviNS92H9EhJps=
+golang.conradwood.net/apis/h2gproxy v1.1.1877/go.mod h1:/QxwL6QrsXr3qKABVL8hUgrpcmw5IvTpEajHhm5/c0c=
 golang.conradwood.net/apis/objectstore v1.1.1861 h1:BEIWe32bMVSEzAMZhQ4NW/DCtpRRKtSfKBoBQub+CbU=
 golang.conradwood.net/apis/objectstore v1.1.1861/go.mod h1:e2yf47IrPI8nSmbDODyI1zvhtP/f22VWK32GvFZgYjU=
+golang.conradwood.net/apis/protorenderer v1.1.1877 h1:+tVmNh/j+nwWv3nldNTF0jmJmm+wuyIr9PiRoFCYT5Q=
+golang.conradwood.net/apis/protorenderer v1.1.1877/go.mod h1:icBdhxNJPjHEoRw2PP5+sLoVwlnK+XyQ4JT7dlVVLuo=
 golang.conradwood.net/apis/registry v1.1.1861 h1:nuunyaBQ/MxtYedZdI0EJT4d54hk5jAUMQ1aLfbc8LI=
 golang.conradwood.net/apis/registry v1.1.1861/go.mod h1:p4jF77DwFYWYQdpgzxHWvPi3Zlg1PiWqV792OOkSN+o=
 golang.conradwood.net/apis/rpcinterceptor v1.1.1861 h1:Oog10Y5jii5UM62rHVpqxBgdPTAuvQygk0AgeIS4P4o=
