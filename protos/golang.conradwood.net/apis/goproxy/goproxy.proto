@@ -3,6 +3,7 @@ syntax = "proto3";
 package goproxy;
 option java_package = "net.conradwood.apis.goproxy";
 import "golang.conradwood.net/apis/common/common.proto";
+import "golang.conradwood.net/apis/h2gproxy/h2gproxy.proto";
 
 // comment: message pingresponse
 message PingResponse {
@@ -10,10 +11,38 @@ message PingResponse {
   string Response = 1;
 }
 
-// comment: echoservice description
+message ModuleInfoRequest {
+  string URL=1;
+}
+enum MODULETYPE {
+  UNKNOWN=0; // unparseable
+  PROTO=2;
+  LOCALMODULE=3;
+  EXTERNALMODULE=4;
+}
+
+message ModuleInfo {
+  MODULETYPE ModuleType=1;
+  bool Exists=2; // if false, then module has been parsed, it's type determined, but it doesn't exist
+}
+message VersionInfo {
+  uint64 Version=1;
+  uint32 BuildTime=2;
+}
+
+/*
+ goproxy acts as a gomodule proxy.
+ it serves three different module types:
+ 1. Protos (from protorenderer)
+ 2. Modules from local build
+ 3. Modules from external builds (e.g. github)
+*/
 service GoProxy {
   // comment: rpc ping
   rpc Ping(common.Void) returns (PingResponse);
+  // h2gproxy endpoint
+  rpc StreamHTTP(h2gproxy.StreamRequest) returns (stream h2gproxy.StreamDataResponse);
+  rpc AnalyseURL(ModuleInfoRequest) returns (ModuleInfo);
 }
 
 
