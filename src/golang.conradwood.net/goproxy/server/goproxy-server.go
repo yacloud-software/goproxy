@@ -134,22 +134,24 @@ func (e *echoServer) StreamHTTP(req *hg.StreamRequest, srv pb.GoProxy_StreamHTTP
 	}
 
 	if strings.HasSuffix(path, "/@v/list") {
-		return serveList(handler, req, srv)
+		err = serveList(handler, req, srv)
+	} else if strings.HasSuffix(path, "/@v/latest") {
+		err = serveLatest(handler, req, srv)
+	} else if strings.HasSuffix(path, ".info") {
+		err = serveInfo(handler, req, srv)
+	} else if strings.HasSuffix(path, ".zip") {
+		err = serveZip(handler, req, srv)
+	} else if strings.HasSuffix(path, ".mod") {
+		err = serveMod(handler, req, srv)
+	} else {
+		err = errors.InvalidArgs(ctx, "invalid path", "invalid path \"%s\"", req.Path)
 	}
-	if strings.HasSuffix(path, "/@v/latest") {
-		return serveLatest(handler, req, srv)
+	if err != nil {
+		fmt.Printf("Error: %s\n", err)
+		return err
 	}
-	if strings.HasSuffix(path, ".info") {
-		return serveInfo(handler, req, srv)
-	}
-	if strings.HasSuffix(path, ".zip") {
-		return serveZip(handler, req, srv)
-	}
-	if strings.HasSuffix(path, ".mod") {
-		return serveMod(handler, req, srv)
-	}
-	fmt.Printf("Invalid path: \"%s\"\n", req.Path)
-	return errors.InvalidArgs(ctx, "invalid path", "invalid path \"%s\"", req.Path)
+	return nil
+
 }
 
 func versionFromPath(ctx context.Context, path string) (string, error) {
