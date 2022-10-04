@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	pb "golang.conradwood.net/apis/goproxy"
+	af "golang.conradwood.net/goproxy/handlers/artefact"
 	"golang.conradwood.net/goproxy/handlers/ext"
 	"golang.conradwood.net/goproxy/handlers/proto"
 	"io"
@@ -23,20 +24,30 @@ type Handler interface {
 // returns a handler or a defaulthandler if it cannot determine which one
 func HandlerByPath(ctx context.Context, path string) (Handler, error) {
 	var err error
+
+	// check with protorenderer
 	h1, err := proto.HandlerByPath(ctx, path)
 	if err != nil {
 		return nil, err
 	}
-	//	fmt.Printf("Handler: %#v\n", h)
 	if h1 != nil {
 		return h1, nil
 	}
 
+	// check with artefact server
+	h3, err := af.HandlerByPath(ctx, path)
+	if err != nil {
+		return nil, err
+	}
+	if h3 != nil {
+		return h3, nil
+	}
+
+	// check external (probably, most likely if it is not any of the others...)
 	h2, err := ext.HandlerByPath(ctx, path)
 	if err != nil {
 		return nil, err
 	}
-	//	fmt.Printf("Handler: %#v\n", h)
 	if h2 != nil {
 		return h2, nil
 	}

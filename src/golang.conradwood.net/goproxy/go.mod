@@ -21,6 +21,7 @@ require (
 	github.com/prometheus/client_model v0.2.0 // indirect
 	github.com/prometheus/common v0.37.0 // indirect
 	github.com/prometheus/procfs v0.8.0 // indirect
+	golang.conradwood.net/apis/artefact v1.1.1879 // indirect
 	golang.conradwood.net/apis/auth v1.1.1861 // indirect
 	golang.conradwood.net/apis/autodeployer v1.1.1861 // indirect
 	golang.conradwood.net/apis/deploymonkey v1.1.1861 // indirect

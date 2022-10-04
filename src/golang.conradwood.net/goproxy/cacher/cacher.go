@@ -3,7 +3,9 @@ package cacher
 import (
 	"context"
 	"fmt"
+	pb "golang.conradwood.net/apis/goproxy"
 	"golang.conradwood.net/goproxy/db"
+	"time"
 )
 
 type Cache struct {
@@ -29,4 +31,18 @@ func (c *Cache) IsAvailable(ctx context.Context) bool {
 		}
 	}
 	return false
+}
+
+func (c *Cache) PutBytes(ctx context.Context, data []byte) error {
+	cm := &pb.CachedModule{
+		Path:    c.path,
+		Version: c.version,
+		Suffix:  c.suffix,
+		Created: uint32(time.Now().Unix()),
+	}
+	_, err := db.DefaultDBCachedModule().Save(ctx, cm)
+	if err != nil {
+		return err
+	}
+	return nil
 }

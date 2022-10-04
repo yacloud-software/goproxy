@@ -245,7 +245,7 @@ func serveList(handler handlers.Handler, req *hg.StreamRequest, srv pb.GoProxy_S
 	return sendBytes(srv, []byte(res))
 }
 func versionToString(v uint64) string {
-	return fmt.Sprintf("v0.%d.0", v)
+	return fmt.Sprintf("v1.1.%d", v)
 }
 func sendBytes(srv pb.GoProxy_StreamHTTPServer, b []byte) error {
 	if *debug {

@@ -8,9 +8,10 @@ import (
 	"golang.conradwood.net/apis/common"
 	pb "golang.conradwood.net/apis/goproxy"
 	pr "golang.conradwood.net/apis/protorenderer"
-	"golang.conradwood.net/go-easyops/errors"
+	//	"golang.conradwood.net/go-easyops/errors"
+	"golang.conradwood.net/goproxy/cacher"
+	hh "golang.conradwood.net/goproxy/handlerhelpers"
 	"io"
-	"strconv"
 	"strings"
 )
 
@@ -27,6 +28,7 @@ type protoHandler struct {
 	pack    *pr.Package
 	version *pr.Version
 	path    string
+	modname string
 }
 
 func HandlerByPath(ctx context.Context, path string) (*protoHandler, error) {
@@ -44,6 +46,7 @@ func HandlerByPath(ctx context.Context, path string) (*protoHandler, error) {
 	}
 	p := &protoHandler{pack: pack, path: path}
 	p.version, err = pr.GetProtoRendererClient().GetVersion(ctx, &common.Void{})
+	p.modname = path
 	return p, nil
 }
 func (ph *protoHandler) ModuleInfo() *pb.ModuleInfo {
@@ -69,7 +72,7 @@ func isWellKnownProtoPath(path string) bool {
 	return false
 }
 func (ph *protoHandler) GetVersion(ctx context.Context, v string) (*pb.VersionInfo, error) {
-	vid, err := parseIDFromString(v)
+	vid, err := hh.ParseIDFromString(v)
 	if err != nil {
 		return nil, err
 	}
@@ -77,48 +80,60 @@ func (ph *protoHandler) GetVersion(ctx context.Context, v string) (*pb.VersionIn
 	return vi, nil
 }
 
-func parseIDFromString(v string) (uint64, error) {
-	sx := strings.Split(v, ".")
-	if len(sx) != 3 {
-		return 0, fmt.Errorf("invalid string \"%s\" (%d)\n", v, len(sx))
-	}
-	res, err := strconv.ParseUint(sx[2], 10, 64)
-	if err != nil {
-		return 0, err
-	}
-	return res, nil
-}
-func (ph *protoHandler) GetZip(ctx context.Context, w io.Writer, v string) error {
-	vid, err := parseIDFromString(v)
+func (ph *protoHandler) GetZip(ctx context.Context, w io.Writer, version string) error {
+	vid, err := hh.ParseIDFromString(version)
 	if err != nil {
 		return err
 	}
 	//	fmt.Printf("Getting proto zip for package \"%s\", version \"%d\"\n", ph.pack.Name, ph.version.Version)
 	fmt.Printf("Requested version: \"%d\", current version: \"%d\"\n", vid, ph.version.Version)
-	if ph.version.Version != vid {
-		s := fmt.Sprintf("proto in version %d is not available (current version is %d)", vid, ph.version.Version)
-		return errors.InvalidArgs(ctx, s, s)
-	}
 
-	pn := &pr.PackageName{PackageName: ph.pack.Name}
+	// don't enforce version. instead we rely on caches (otherwise we are unable to build the cache)
+	/*
+		if ph.version.Version != vid {
+			s := fmt.Sprintf("proto in version %d is not available (current version is %d)", vid, ph.version.Version)
+			return errors.InvalidArgs(ctx, s, s)
+		}
+	*/
+
+	pn := &pr.PackageName{PackageName: ph.modname}
 	srv, err := pr.GetProtoRendererClient().GetFilesGoByPackageName(ctx, pn)
 	if err != nil {
 		return err
 	}
 	zw := zip.NewWriter(w)
+
+	/*
+		// now add go.mod
+		modfile, err := ph.GetMod(ctx, version)
+		if err != nil {
+			return err
+		}
+		modwriter, err := zw.Create(hh.Filename2ZipFilename(ph.modname, version, "go.mod"))
+		if err != nil {
+			return err
+		}
+		_, err = modwriter.Write(modfile)
+		if err != nil {
+			return err
+		}
+	*/
+	// now add the files
 	lastfile := ""
 	var curwriter io.Writer
 	for {
 		zf, err := srv.Recv()
 		if err != nil {
+			fmt.Printf("Err:%s\n", err)
 			if err == io.EOF {
 				break
 			}
 			return err
 		}
-		if lastfile == "" && zf.Filename != "" {
+		//		fmt.Printf("Gofile received: %s (%d bytes)\n", zf.Filename, len(zf.Payload))
+		if lastfile != zf.Filename && zf.Filename != "" {
 			lastfile = zf.Filename
-			curwriter, err = zw.Create(zf.Filename)
+			curwriter, err = zw.Create(hh.Filename2ZipFilename(ph.modname, version, zf.Filename))
 			if err != nil {
 				return err
 			}
@@ -139,5 +154,14 @@ func (ph *protoHandler) GetZip(ctx context.Context, w io.Writer, v string) error
 }
 func (ph *protoHandler) GetMod(ctx context.Context, version string) ([]byte, error) {
 	res := "module " + ph.path
-	return []byte(res), nil
+	buf := []byte(res)
+	c, err := cacher.NewCacher(ctx, ph.path, version, "mod")
+	if err != nil {
+		return nil, err
+	}
+	err = c.PutBytes(ctx, buf)
+	if err != nil {
+		return nil, err
+	}
+	return buf, nil
 }
