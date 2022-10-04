@@ -13,8 +13,8 @@ import (
 type Handler interface {
 	ModuleInfo() *pb.ModuleInfo
 	ListVersions(ctx context.Context) ([]*pb.VersionInfo, error)
-	// return a versioninfo from a go string (e.g. "v0.120.0")
-	GetVersion(ctx context.Context, version string) (*pb.VersionInfo, error)
+	// return the latest versioninfo from a go string (e.g. "v0.120.0")
+	GetLatestVersion(ctx context.Context) (*pb.VersionInfo, error)
 	// get the zip file for a version
 	GetZip(ctx context.Context, w io.Writer, version string) error
 	// get the go.mod (url like .../@v/[version].mod
@@ -64,7 +64,7 @@ func (d *defaulthandler) ListVersions(ctx context.Context) ([]*pb.VersionInfo, e
 func (d *defaulthandler) ModuleInfo() *pb.ModuleInfo {
 	return &pb.ModuleInfo{ModuleType: pb.MODULETYPE_UNKNOWN}
 }
-func (d *defaulthandler) GetVersion(ctx context.Context, v string) (*pb.VersionInfo, error) {
+func (d *defaulthandler) GetLatestVersion(ctx context.Context) (*pb.VersionInfo, error) {
 	panic("do not call me")
 }
 func (d *defaulthandler) GetZip(ctx context.Context, w io.Writer, v string) error {

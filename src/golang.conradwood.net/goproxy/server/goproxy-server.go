@@ -130,6 +130,8 @@ func (e *echoServer) StreamHTTP(req *hg.StreamRequest, srv pb.GoProxy_StreamHTTP
 	if strings.HasSuffix(path, "/@v/list") {
 		err = serveList(handler, req, srv)
 	} else if strings.HasSuffix(path, "/@v/latest") {
+		err = fmt.Errorf("/@v/latest not support")
+	} else if strings.HasSuffix(path, "@latest") {
 		err = serveLatest(handler, req, srv)
 	} else if strings.HasSuffix(path, ".info") {
 		err = serveInfo(handler, req, srv)
@@ -138,10 +140,11 @@ func (e *echoServer) StreamHTTP(req *hg.StreamRequest, srv pb.GoProxy_StreamHTTP
 	} else if strings.HasSuffix(path, ".mod") {
 		err = serveMod(handler, req, srv)
 	} else {
-		err = errors.InvalidArgs(ctx, "invalid path", "invalid path \"%s\"", req.Path)
+		// must be notfound so that go tries to download alternative paths
+		err = errors.NotFound(ctx, "invalid path", "invalid path \"%s\"", req.Path)
 	}
 	if err != nil {
-		fmt.Printf("Error for \"%s\": %s\n", req.Path, err)
+		fmt.Printf("Error for \"%s\" in %v: %s\n", req.Path, mi.ModuleType, err)
 		return err
 	}
 	return nil
@@ -224,7 +227,14 @@ func serveInfo(handler handlers.Handler, req *hg.StreamRequest, srv pb.GoProxy_S
 // serve requests suffixed by /@v/latest
 func serveLatest(handler handlers.Handler, req *hg.StreamRequest, srv pb.GoProxy_StreamHTTPServer) error {
 	fmt.Printf("Serving latest for \"%s\"\n", req.Path)
-	panic("not implemented")
+	vi, err := handler.GetLatestVersion(srv.Context())
+	if err != nil {
+		return err
+	}
+	version_string := versionToString(vi)
+	fmt.Printf("Version: \"%s\"\n", version_string)
+	res := fmt.Sprintf(`{"Version":"%s"}`, version_string)
+	return sendBytes(srv, []byte(res))
 }
 
 // serve requests suffixed by /@v/list
@@ -240,12 +250,15 @@ func serveList(handler handlers.Handler, req *hg.StreamRequest, srv pb.GoProxy_S
 	})
 	res := ""
 	for _, v := range vls {
-		res = versionToString(v.Version) + "\n" + res
+		res = versionToString(v) + "\n" + res
 	}
 	return sendBytes(srv, []byte(res))
 }
-func versionToString(v uint64) string {
-	return fmt.Sprintf("v1.1.%d", v)
+func versionToString(v *pb.VersionInfo) string {
+	if v.Version != 0 {
+		return fmt.Sprintf("v1.1.%d", v.Version)
+	}
+	return v.VersionName
 }
 func sendBytes(srv pb.GoProxy_StreamHTTPServer, b []byte) error {
 	if *debug {

@@ -4,8 +4,10 @@ import (
 	"context"
 	"fmt"
 	pb "golang.conradwood.net/apis/goproxy"
+	"golang.conradwood.net/go-easyops/errors"
 	"golang.conradwood.net/go-easyops/http"
 	"io"
+	"strings"
 )
 
 type exthandler struct {
@@ -21,11 +23,26 @@ func (e *exthandler) ModuleInfo() *pb.ModuleInfo {
 	return mi
 }
 func (e *exthandler) ListVersions(ctx context.Context) ([]*pb.VersionInfo, error) {
-	fmt.Printf("No versions for ext yet")
-	return nil, nil
+	h := http.HTTP{}
+	url := "https://proxy.golang.org/" + e.path + "/@v/list"
+	hr := h.Get(url)
+	err := hr.Error()
+	if err != nil {
+		fmt.Printf("Failed to access \"%s\": %s (%d)\n", url, err, hr.HTTPCode())
+		fmt.Printf("body:\n%s\n\n", string(hr.Body()))
+		return nil, err
+	}
+	body := hr.Body()
+	var res []*pb.VersionInfo
+	for _, line := range strings.Split(string(body), "\n") {
+		v := &pb.VersionInfo{VersionName: line}
+		res = append(res, v)
+	}
+	return res, nil
+
 }
-func (e *exthandler) GetVersion(ctx context.Context, v string) (*pb.VersionInfo, error) {
-	return nil, nil
+func (e *exthandler) GetLatestVersion(ctx context.Context) (*pb.VersionInfo, error) {
+	return nil, errors.NotFound(ctx, "no latest version implemented for ext")
 }
 func (e *exthandler) GetZip(ctx context.Context, w io.Writer, v string) error {
 	h := http.HTTP{}
