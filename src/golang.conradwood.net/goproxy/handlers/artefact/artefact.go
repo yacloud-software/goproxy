@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	artefact "golang.conradwood.net/apis/artefact"
+	git "golang.conradwood.net/apis/gitserver"
 	pb "golang.conradwood.net/apis/goproxy"
 	"golang.conradwood.net/go-easyops/cache"
 	"golang.conradwood.net/go-easyops/errors"
@@ -34,6 +35,17 @@ type afcacheentry struct {
 }
 
 func path2artefactid(ctx context.Context, path string) (*artefact.ArtefactID, string, error) {
+	bur := &git.ByURLRequest{URL: fmt.Sprintf("https://%s", path)}
+	r, err := git.GetGIT2Client().RepoByURL(ctx, bur)
+	if err == nil {
+		// we got a repo
+		repoid := r.ID
+		afid, err := artefact.GetArtefactClient().GetArtefactIDForRepo(ctx, &artefact.ID{ID: repoid})
+		if err == nil {
+			return afid, path, nil
+		}
+	}
+
 	if path == "golang.conradwood.net/go-easyops" {
 		return &artefact.ArtefactID{ID: 24, Domain: "conradwood.net", Name: "go-easysops"}, "golang.conradwood.net/go-easyops", nil
 	}
