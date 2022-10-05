@@ -34,7 +34,12 @@ message VersionInfo {
   uint32 BuildTime=2;
   string VersionName=3; // sometimes version annoyingly is just a string
 }
-
+message GetPathRequest {
+  string Path=1;
+}
+message BinData {
+  bytes Data=1;
+}
 /*
  goproxy acts as a gomodule proxy.
  it serves three different module types:
@@ -46,6 +51,8 @@ service GoProxy {
   // h2gproxy endpoint
   rpc StreamHTTP(h2gproxy.StreamRequest) returns (stream h2gproxy.StreamDataResponse);
   rpc AnalyseURL(ModuleInfoRequest) returns (ModuleInfo);
+  // given a path, will download response
+  rpc GetPath(GetPathRequest) returns (stream BinData);
 }
 
 
