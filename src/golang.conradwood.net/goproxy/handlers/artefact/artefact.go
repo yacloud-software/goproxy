@@ -10,6 +10,7 @@ import (
 	"golang.conradwood.net/go-easyops/cache"
 	"golang.conradwood.net/go-easyops/errors"
 	"golang.conradwood.net/go-easyops/utils"
+	"golang.conradwood.net/goproxy/cacher"
 	"io"
 	"strconv"
 	"strings"
@@ -162,7 +163,7 @@ func (af *afhandler) GetLatestVersion(ctx context.Context) (*pb.VersionInfo, err
 }
 
 // get the zip file for a version
-func (af *afhandler) GetZip(ctx context.Context, w io.Writer, version string) error {
+func (af *afhandler) GetZip(ctx context.Context, c *cacher.Cache, w io.Writer, version string) error {
 	buildid, err := parseIDFromString(version)
 	if err != nil {
 		return err
@@ -204,7 +205,7 @@ func (af *afhandler) GetZip(ctx context.Context, w io.Writer, version string) er
 }
 
 // get the go.mod (url like .../@v/[version].mod
-func (af *afhandler) GetMod(ctx context.Context, version string) ([]byte, error) {
+func (af *afhandler) GetMod(ctx context.Context, c *cacher.Cache, version string) ([]byte, error) {
 	buildid, err := parseIDFromString(version)
 	if err != nil {
 		return nil, err

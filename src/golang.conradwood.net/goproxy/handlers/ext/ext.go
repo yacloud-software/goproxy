@@ -61,7 +61,7 @@ func (e *exthandler) GetLatestVersion(ctx context.Context) (*pb.VersionInfo, err
 	fmt.Printf("Response (latest): %s\n", string(b))
 	return nil, errors.NotFound(ctx, "'latest' not found", "'latest' not found")
 }
-func (e *exthandler) GetZip(ctx context.Context, w io.Writer, version string) error {
+func (e *exthandler) GetZip(ctx context.Context, c *cacher.Cache, w io.Writer, version string) error {
 	h := http.HTTP{}
 	h.SetTimeout(time.Duration(20) * time.Second)
 	hr := h.Get("https://proxy.golang.org/" + e.path + "/@v/" + version + ".zip")
@@ -75,10 +75,6 @@ func (e *exthandler) GetZip(ctx context.Context, w io.Writer, version string) er
 		return err
 	}
 
-	c, err := cacher.NewCacher(ctx, e.path, version, "zip")
-	if err != nil {
-		return err
-	}
 	err = c.PutBytes(ctx, b)
 	if err != nil {
 		return err
@@ -86,7 +82,7 @@ func (e *exthandler) GetZip(ctx context.Context, w io.Writer, version string) er
 
 	return nil
 }
-func (e *exthandler) GetMod(ctx context.Context, version string) ([]byte, error) {
+func (e *exthandler) GetMod(ctx context.Context, c *cacher.Cache, version string) ([]byte, error) {
 	h := http.HTTP{}
 	h.SetTimeout(time.Duration(20) * time.Second)
 	hr := h.Get("https://proxy.golang.org/" + e.path + "/@v/" + version + ".mod")
@@ -95,10 +91,6 @@ func (e *exthandler) GetMod(ctx context.Context, version string) ([]byte, error)
 		return nil, err
 	}
 	b := hr.Body()
-	c, err := cacher.NewCacher(ctx, e.path, version, "mod")
-	if err != nil {
-		return nil, err
-	}
 	err = c.PutBytes(ctx, b)
 	if err != nil {
 		return nil, err

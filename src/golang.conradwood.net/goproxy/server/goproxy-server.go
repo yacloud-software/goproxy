@@ -197,7 +197,7 @@ func serveMod(handler handlers.Handler, req *h2g.StreamRequest, srv streamer) er
 	if nc.IsAvailable(ctx) {
 		panic("cached already")
 	}
-	b, err := handler.GetMod(ctx, version_string)
+	b, err := handler.GetMod(ctx, nc, version_string)
 	if err != nil {
 		return err
 	}
@@ -220,7 +220,7 @@ func serveZip(handler handlers.Handler, req *h2g.StreamRequest, srv streamer) er
 	}
 	fmt.Printf("Version: \"%s\"\n", version_string)
 	sw := NewStreamWriter(srv)
-	err = handler.GetZip(ctx, sw, version_string)
+	err = handler.GetZip(ctx, nc, sw, version_string)
 	if err != nil {
 		return err
 	}

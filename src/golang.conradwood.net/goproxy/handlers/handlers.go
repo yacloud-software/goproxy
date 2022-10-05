@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	pb "golang.conradwood.net/apis/goproxy"
+	"golang.conradwood.net/goproxy/cacher"
 	af "golang.conradwood.net/goproxy/handlers/artefact"
 	"golang.conradwood.net/goproxy/handlers/ext"
 	"golang.conradwood.net/goproxy/handlers/proto"
@@ -16,9 +17,9 @@ type Handler interface {
 	// return the latest versioninfo from a go string (e.g. "v0.120.0")
 	GetLatestVersion(ctx context.Context) (*pb.VersionInfo, error)
 	// get the zip file for a version
-	GetZip(ctx context.Context, w io.Writer, version string) error
+	GetZip(ctx context.Context, c *cacher.Cache, w io.Writer, version string) error
 	// get the go.mod (url like .../@v/[version].mod
-	GetMod(ctx context.Context, version string) ([]byte, error)
+	GetMod(ctx context.Context, c *cacher.Cache, version string) ([]byte, error)
 }
 
 // returns a handler or a defaulthandler if it cannot determine which one
@@ -67,9 +68,9 @@ func (d *defaulthandler) ModuleInfo() *pb.ModuleInfo {
 func (d *defaulthandler) GetLatestVersion(ctx context.Context) (*pb.VersionInfo, error) {
 	panic("do not call me")
 }
-func (d *defaulthandler) GetZip(ctx context.Context, w io.Writer, v string) error {
+func (d *defaulthandler) GetZip(ctx context.Context, c *cacher.Cache, w io.Writer, v string) error {
 	panic("do not call me")
 }
-func (d *defaulthandler) GetMod(ctx context.Context, version string) ([]byte, error) {
+func (d *defaulthandler) GetMod(ctx context.Context, c *cacher.Cache, version string) ([]byte, error) {
 	panic("do not call me")
 }

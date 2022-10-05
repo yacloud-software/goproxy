@@ -79,7 +79,7 @@ func (ph *protoHandler) GetLatestVersion(ctx context.Context) (*pb.VersionInfo, 
 	return vi, nil
 }
 
-func (ph *protoHandler) GetZip(ctx context.Context, w io.Writer, version string) error {
+func (ph *protoHandler) GetZip(ctx context.Context, c *cacher.Cache, w io.Writer, version string) error {
 	if *use_gomodule_to_serve {
 		pr := &gom.ProtoRequest{
 			PackageName: ph.path,
@@ -175,7 +175,7 @@ func (ph *protoHandler) GetZip(ctx context.Context, w io.Writer, version string)
 
 	return nil
 }
-func (ph *protoHandler) GetMod(ctx context.Context, version string) ([]byte, error) {
+func (ph *protoHandler) GetMod(ctx context.Context, c *cacher.Cache, version string) ([]byte, error) {
 	res := "module " + ph.path
 	buf := []byte(res)
 	if *cache_mod {
