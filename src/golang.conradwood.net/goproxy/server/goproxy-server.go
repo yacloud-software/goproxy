@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"github.com/goproxy/goproxy"
 	pb "golang.conradwood.net/apis/goproxy"
-	hg "golang.conradwood.net/apis/h2gproxy"
+	h2g "golang.conradwood.net/apis/h2gproxy"
 	"golang.conradwood.net/go-easyops/auth"
 	"golang.conradwood.net/go-easyops/errors"
 	"golang.conradwood.net/go-easyops/server"
@@ -17,13 +17,16 @@ import (
 	"os"
 	"sort"
 	"strings"
+	"sync"
 )
 
 var (
-	port      = flag.Int("port", 4100, "The grpc server port")
-	http_port = flag.Int("http_port", 4108, "The http server port")
-	gopr      *goproxy.Goproxy
-	debug     = flag.Bool("debug", false, "debug mode")
+	singleton_lock sync.Mutex
+	singleton      = flag.Bool("singleton", false, "if true only allow one access at a time (for debugging)")
+	port           = flag.Int("port", 4100, "The grpc server port")
+	http_port      = flag.Int("http_port", 4108, "The http server port")
+	gopr           *goproxy.Goproxy
+	debug          = flag.Bool("debug", false, "debug mode")
 )
 
 type echoServer struct {
@@ -72,11 +75,24 @@ func goenv() []string {
 /************************************
 * grpc functions
 ************************************/
-
 func (e *echoServer) AnalyseURL(ctx context.Context, req *pb.ModuleInfoRequest) (*pb.ModuleInfo, error) {
 	return nil, nil
 }
-func (e *echoServer) StreamHTTP(req *hg.StreamRequest, srv pb.GoProxy_StreamHTTPServer) error {
+
+type streamer interface {
+	Send(*h2g.StreamDataResponse) error
+	Context() context.Context
+}
+
+func (e *echoServer) StreamHTTP(req *h2g.StreamRequest, srv pb.GoProxy_StreamHTTPServer) error {
+	return e.streamHTTP(req, srv)
+}
+func (e *echoServer) streamHTTP(req *h2g.StreamRequest, srv streamer) error {
+	if *singleton {
+		singleton_lock.Lock()
+		defer singleton_lock.Unlock()
+	}
+	fmt.Printf("-------------------\nStarted...\n")
 	ctx := srv.Context()
 	u := auth.GetUser(ctx)
 	if u == nil {
@@ -141,10 +157,10 @@ func (e *echoServer) StreamHTTP(req *hg.StreamRequest, srv pb.GoProxy_StreamHTTP
 		err = serveMod(handler, req, srv)
 	} else {
 		// must be notfound so that go tries to download alternative paths
-		err = errors.NotFound(ctx, "invalid path", "invalid path \"%s\"", req.Path)
+		err = errors.NotFound(ctx, "invalid path \"%s\"", req.Path)
 	}
 	if err != nil {
-		fmt.Printf("Error for \"%s\" in %v: %s\n", req.Path, mi.ModuleType, err)
+		fmt.Printf("Error for \"%s\" in %v: %s\n", path, mi.ModuleType, utils.ErrorString(err))
 		return err
 	}
 	return nil
@@ -167,7 +183,7 @@ func versionFromPath(ctx context.Context, path string) (string, error) {
 }
 
 // serve requests suffixed by /@v/[version].mod
-func serveMod(handler handlers.Handler, req *hg.StreamRequest, srv pb.GoProxy_StreamHTTPServer) error {
+func serveMod(handler handlers.Handler, req *h2g.StreamRequest, srv streamer) error {
 	ctx := srv.Context()
 	version_string, err := versionFromPath(ctx, req.Path)
 	if err != nil {
@@ -189,7 +205,7 @@ func serveMod(handler handlers.Handler, req *hg.StreamRequest, srv pb.GoProxy_St
 }
 
 // serve requests suffixed by /@v/[version].zip
-func serveZip(handler handlers.Handler, req *hg.StreamRequest, srv pb.GoProxy_StreamHTTPServer) error {
+func serveZip(handler handlers.Handler, req *h2g.StreamRequest, srv streamer) error {
 	ctx := srv.Context()
 	version_string, err := versionFromPath(ctx, req.Path)
 	if err != nil {
@@ -212,7 +228,7 @@ func serveZip(handler handlers.Handler, req *hg.StreamRequest, srv pb.GoProxy_St
 }
 
 // serve requests suffixed by /@v/[version].info
-func serveInfo(handler handlers.Handler, req *hg.StreamRequest, srv pb.GoProxy_StreamHTTPServer) error {
+func serveInfo(handler handlers.Handler, req *h2g.StreamRequest, srv streamer) error {
 	fmt.Printf("Serving version for \"%s\"\n", req.Path)
 	ctx := srv.Context()
 	version_string, err := versionFromPath(ctx, req.Path)
@@ -225,7 +241,7 @@ func serveInfo(handler handlers.Handler, req *hg.StreamRequest, srv pb.GoProxy_S
 }
 
 // serve requests suffixed by /@v/latest
-func serveLatest(handler handlers.Handler, req *hg.StreamRequest, srv pb.GoProxy_StreamHTTPServer) error {
+func serveLatest(handler handlers.Handler, req *h2g.StreamRequest, srv streamer) error {
 	fmt.Printf("Serving latest for \"%s\"\n", req.Path)
 	vi, err := handler.GetLatestVersion(srv.Context())
 	if err != nil {
@@ -238,7 +254,7 @@ func serveLatest(handler handlers.Handler, req *hg.StreamRequest, srv pb.GoProxy
 }
 
 // serve requests suffixed by /@v/list
-func serveList(handler handlers.Handler, req *hg.StreamRequest, srv pb.GoProxy_StreamHTTPServer) error {
+func serveList(handler handlers.Handler, req *h2g.StreamRequest, srv streamer) error {
 	fmt.Printf("Serving list for \"%s\"\n", req.Path)
 	ctx := srv.Context()
 	vls, err := handler.ListVersions(ctx)
@@ -260,14 +276,14 @@ func versionToString(v *pb.VersionInfo) string {
 	}
 	return v.VersionName
 }
-func sendBytes(srv pb.GoProxy_StreamHTTPServer, b []byte) error {
+func sendBytes(srv streamer, b []byte) error {
 	if *debug {
 		if len(b) < 800 {
 			fmt.Printf("Response:\n")
 			fmt.Printf("%s\n", string(b))
 		}
 	}
-	err := srv.Send(&hg.StreamDataResponse{Response: &hg.StreamResponse{
+	err := srv.Send(&h2g.StreamDataResponse{Response: &h2g.StreamResponse{
 		Filename: "foo",
 		Size:     uint64(len(b)),
 		MimeType: "application/octet-stream",
@@ -282,7 +298,7 @@ func sendBytes(srv pb.GoProxy_StreamHTTPServer, b []byte) error {
 			size = len(b) - total
 		}
 		eo := total + size
-		err = srv.Send(&hg.StreamDataResponse{Data: b[total:eo]})
+		err = srv.Send(&h2g.StreamDataResponse{Data: b[total:eo]})
 		if err != nil {
 			return err
 		}

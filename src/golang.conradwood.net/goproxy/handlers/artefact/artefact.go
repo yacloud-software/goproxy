@@ -34,20 +34,48 @@ type afcacheentry struct {
 	versioninfolist []*pb.VersionInfo
 }
 
-func path2artefactid(ctx context.Context, path string) (*artefact.ArtefactID, string, error) {
-	bur := &git.ByURLRequest{URL: fmt.Sprintf("https://%s", path)}
+func url2artefactid(ctx context.Context, url string) (*artefact.ArtefactID, error) {
+	bur := &git.ByURLRequest{URL: url}
 	r, err := git.GetGIT2Client().RepoByURL(ctx, bur)
-	if err == nil {
-		// we got a repo
-		repoid := r.ID
-		afid, err := artefact.GetArtefactClient().GetArtefactIDForRepo(ctx, &artefact.ID{ID: repoid})
-		if err == nil {
-			return afid, path, nil
+	if err != nil {
+		fmt.Printf("no git repo by url \"%s\": %s\n", url, err)
+		return nil, nil
+	}
+	// we got a repo
+	repoid := r.ID
+	afid, err := artefact.GetArtefactClient().GetArtefactIDForRepo(ctx, &artefact.ID{ID: repoid})
+	if err != nil {
+		return nil, err
+	}
+	return afid, nil
+
+}
+func path2artefactid(ctx context.Context, path string) (*artefact.ArtefactID, string, error) {
+	fmt.Printf("resolving \"%s\" as artefact\n", path)
+	// we got to do some messy conversions, e.g. from
+	// "golang.singingcat.net/scgolib" to "git.singingcat.net/git/scgolib.git"
+	gu := []string{path}
+	ghost := "git." + strings.TrimPrefix(path, "golang.")
+	gpath := ""
+	idx := strings.Index(ghost, "/")
+	if idx != -1 {
+		gpath = strings.TrimPrefix(ghost[idx:], "/")
+		ghost = strings.TrimPrefix(ghost[:idx], "/")
+	}
+	gu = append(gu, "https://"+ghost+"/git/"+gpath+".git")
+
+	for _, g := range gu {
+		af, err := url2artefactid(ctx, g)
+		if err != nil {
+			return nil, "", err
+		}
+		if af != nil {
+			return af, path, nil
 		}
 	}
 
 	if path == "golang.conradwood.net/go-easyops" {
-		return &artefact.ArtefactID{ID: 24, Domain: "conradwood.net", Name: "go-easysops"}, "golang.conradwood.net/go-easyops", nil
+		return &artefact.ArtefactID{ID: 24, Domain: "conradwood.net", Name: "go-easysops"}, path, nil
 	}
 	fmt.Printf("Not an artefact: \"%s\"\n", path)
 	return nil, "", nil
