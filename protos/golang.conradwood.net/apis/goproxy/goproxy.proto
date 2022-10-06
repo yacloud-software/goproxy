@@ -13,6 +13,7 @@ message CachedModule {
   string Key=5;
   uint32 Created=6;
   uint32 LastUsed=7;
+  bool ToBeDeleted=8;
 }
 
 message ModuleInfoRequest {
