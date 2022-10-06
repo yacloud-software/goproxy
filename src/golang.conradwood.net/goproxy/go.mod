@@ -11,7 +11,7 @@ require (
 	golang.conradwood.net/apis/goproxy v1.1.1877
 	golang.conradwood.net/apis/h2gproxy v1.1.1885
 	golang.conradwood.net/apis/protorenderer v1.1.1885
-	golang.conradwood.net/go-easyops v0.1.13750
+	golang.conradwood.net/go-easyops v0.1.13799
 	google.golang.org/grpc v1.49.0
 )
 

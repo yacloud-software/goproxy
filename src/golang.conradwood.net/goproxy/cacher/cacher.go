@@ -5,19 +5,25 @@ import (
 	"flag"
 	"fmt"
 	pb "golang.conradwood.net/apis/goproxy"
+	"golang.conradwood.net/apis/objectstore"
+	"golang.conradwood.net/go-easyops/client"
+	"golang.conradwood.net/go-easyops/errors"
+	"golang.conradwood.net/go-easyops/utils"
 	"golang.conradwood.net/goproxy/db"
+	"io"
 	"time"
 )
 
 var (
 	debug  = flag.Bool("debug_cacher", false, "debug cacher")
-	enable = flag.Bool("cacher_enable", false, "if true cache files")
+	enable = flag.Bool("cacher_enable", true, "if true cache files")
 )
 
 type Cache struct {
 	path    string
 	version string
 	suffix  string
+	dbmod   *pb.CachedModule
 }
 
 func NewCacher(ctx context.Context, path, version, suffix string) (*Cache, error) {
@@ -32,19 +38,32 @@ func (c *Cache) IsAvailable(ctx context.Context) bool {
 	return c.isAvailable(ctx)
 }
 func (c *Cache) isAvailable(ctx context.Context) bool {
+	if c.getDBMatch(ctx) == nil {
+		return false
+	}
+	return true
+}
+func (c *Cache) getDBMatch(ctx context.Context) *pb.CachedModule {
+	if c.dbmod != nil {
+		return c.dbmod
+	}
 	cms, err := db.DefaultDBCachedModule().ByPath(ctx, c.path)
 	if err != nil {
 		fmt.Printf("WARNING - cache error (%s)\n", err)
-		return false
+		return nil
 	}
 	for _, cm := range cms {
+		if cm.ToBeDeleted {
+			continue
+		}
 		if cm.Path == c.path && cm.Version == c.version && cm.Suffix == c.suffix {
 			c.Debugf("is available\n")
-			return true
+			c.dbmod = cm
+			return cm
 		}
 	}
 	c.Debugf("is not available\n")
-	return false
+	return nil
 }
 
 func (c *Cache) PutBytes(ctx context.Context, data []byte) error {
@@ -57,8 +76,13 @@ func (c *Cache) PutBytes(ctx context.Context, data []byte) error {
 		Version: c.version,
 		Suffix:  c.suffix,
 		Created: uint32(time.Now().Unix()),
+		Key:     "goproxy_cache_" + utils.RandomString(70),
 	}
 	_, err := db.DefaultDBCachedModule().Save(ctx, cm)
+	if err != nil {
+		return err
+	}
+	err = client.PutWithID(ctx, cm.Key, data)
 	if err != nil {
 		return err
 	}
@@ -72,4 +96,39 @@ func (c *Cache) Debugf(format string, args ...interface{}) {
 	s1 := fmt.Sprintf("[cacher %s@%s.%s] ", c.path, c.version, c.suffix)
 	s2 := fmt.Sprintf(format, args...)
 	fmt.Print(s1 + s2)
+}
+
+func (c *Cache) Get(ctx context.Context, f func(data []byte) error) error {
+	om := c.getDBMatch(ctx)
+	if om == nil {
+		return errors.NotFound(ctx, "not found")
+	}
+	key := om.Key
+	if key == "" {
+		return errors.NotFound(ctx, "key missing")
+	}
+	om.LastUsed = uint32(time.Now().Unix())
+	err := db.DefaultDBCachedModule().Update(ctx, om)
+	if err != nil {
+		fmt.Printf("Failed to update: %s\n", err)
+	}
+
+	srv, err := client.GetObjectStoreClient().LGet(ctx, &objectstore.GetRequest{ID: key})
+	if err != nil {
+		return err
+	}
+	for {
+		r, err := srv.Recv()
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			return err
+		}
+		err = f(r.Content)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
