@@ -64,6 +64,7 @@ func (c *Cache) PutBytes(ctx context.Context, data []byte) error {
 	}
 	return nil
 }
+
 func (c *Cache) Debugf(format string, args ...interface{}) {
 	if !*debug {
 		return
