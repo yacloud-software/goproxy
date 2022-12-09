@@ -14,6 +14,7 @@ import (
 )
 
 var (
+	cache_ext     = flag.Bool("cache_ext_files", false, "if true cache external files")
 	use_urlcacher = flag.Bool("use_urlcacher", false, "if true, use url cacher for external urls")
 )
 
@@ -21,6 +22,12 @@ type exthandler struct {
 	path string
 }
 
+func useInternalCache() bool {
+	if *use_urlcacher {
+		return false
+	}
+	return *cache_ext
+}
 func HandlerByPath(ctx context.Context, path string) (*exthandler, error) {
 	if strings.Contains(path, "/apis/") {
 		return nil, nil
@@ -86,12 +93,12 @@ func (e *exthandler) GetZip(ctx context.Context, c *cacher.Cache, w io.Writer, v
 	if err != nil {
 		return err
 	}
-
-	err = c.PutBytes(ctx, b)
-	if err != nil {
-		return err
+	if useInternalCache() {
+		err = c.PutBytes(ctx, b)
+		if err != nil {
+			return err
+		}
 	}
-
 	return nil
 }
 func (e *exthandler) GetMod(ctx context.Context, c *cacher.Cache, version string) ([]byte, error) {
@@ -103,9 +110,11 @@ func (e *exthandler) GetMod(ctx context.Context, c *cacher.Cache, version string
 		return nil, err
 	}
 	b := hr.Body()
-	err = c.PutBytes(ctx, b)
-	if err != nil {
-		return nil, err
+	if useInternalCache() {
+		err = c.PutBytes(ctx, b)
+		if err != nil {
+			return nil, err
+		}
 	}
 	return b, nil
 }
