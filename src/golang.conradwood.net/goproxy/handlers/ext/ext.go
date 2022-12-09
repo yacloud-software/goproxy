@@ -2,6 +2,7 @@ package ext
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	pb "golang.conradwood.net/apis/goproxy"
 	"golang.conradwood.net/go-easyops/errors"
@@ -10,6 +11,10 @@ import (
 	"io"
 	"strings"
 	"time"
+)
+
+var (
+	use_urlcacher = flag.Bool("use_urlcacher", false, "if true, use url cacher for external urls")
 )
 
 type exthandler struct {
@@ -27,8 +32,15 @@ func (e *exthandler) ModuleInfo() *pb.ModuleInfo {
 	mi := &pb.ModuleInfo{ModuleType: pb.MODULETYPE_EXTERNALMODULE, Exists: true}
 	return mi
 }
+func getHTTP(ctx context.Context) http.HTTPIF {
+	if *use_urlcacher {
+		return http.NewCachingClient(ctx)
+	}
+	return http.NewDirectClient()
+
+}
 func (e *exthandler) ListVersions(ctx context.Context) ([]*pb.VersionInfo, error) {
-	h := http.HTTP{}
+	h := getHTTP(ctx)
 	h.SetTimeout(time.Duration(20) * time.Second)
 	url := "https://proxy.golang.org/" + e.path + "/@v/list"
 	hr := h.Get(url)
@@ -48,7 +60,7 @@ func (e *exthandler) ListVersions(ctx context.Context) ([]*pb.VersionInfo, error
 
 }
 func (e *exthandler) GetLatestVersion(ctx context.Context) (*pb.VersionInfo, error) {
-	h := http.HTTP{}
+	h := getHTTP(ctx)
 	h.SetTimeout(time.Duration(20) * time.Second)
 	u := "https://proxy.golang.org/" + e.path + "/@v/latest"
 	hr := h.Get(u)
@@ -62,7 +74,7 @@ func (e *exthandler) GetLatestVersion(ctx context.Context) (*pb.VersionInfo, err
 	return nil, errors.NotFound(ctx, "'latest' not found", "'latest' not found")
 }
 func (e *exthandler) GetZip(ctx context.Context, c *cacher.Cache, w io.Writer, version string) error {
-	h := http.HTTP{}
+	h := getHTTP(ctx)
 	h.SetTimeout(time.Duration(20) * time.Second)
 	hr := h.Get("https://proxy.golang.org/" + e.path + "/@v/" + version + ".zip")
 	err := hr.Error()
@@ -83,7 +95,7 @@ func (e *exthandler) GetZip(ctx context.Context, c *cacher.Cache, w io.Writer, v
 	return nil
 }
 func (e *exthandler) GetMod(ctx context.Context, c *cacher.Cache, version string) ([]byte, error) {
-	h := http.HTTP{}
+	h := getHTTP(ctx)
 	h.SetTimeout(time.Duration(20) * time.Second)
 	hr := h.Get("https://proxy.golang.org/" + e.path + "/@v/" + version + ".mod")
 	err := hr.Error()
