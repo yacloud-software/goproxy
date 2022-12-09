@@ -190,3 +190,6 @@ func (ph *protoHandler) GetMod(ctx context.Context, c *cacher.Cache, version str
 	}
 	return buf, nil
 }
+func (af *protoHandler) CacheEnabled() bool {
+	return true
+}

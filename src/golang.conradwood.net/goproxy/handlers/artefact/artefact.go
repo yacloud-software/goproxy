@@ -268,3 +268,6 @@ func parseIDFromString(v string) (uint64, error) {
 	}
 	return res, nil
 }
+func (af *afhandler) CacheEnabled() bool {
+	return true
+}

@@ -118,3 +118,12 @@ func (e *exthandler) GetMod(ctx context.Context, c *cacher.Cache, version string
 	}
 	return b, nil
 }
+func (e *exthandler) CacheEnabled() bool {
+	if !*cache_ext {
+		return false
+	}
+	if *use_urlcacher {
+		return false
+	}
+	return true
+}

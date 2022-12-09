@@ -20,6 +20,8 @@ type Handler interface {
 	GetZip(ctx context.Context, c *cacher.Cache, w io.Writer, version string) error
 	// get the go.mod (url like .../@v/[version].mod
 	GetMod(ctx context.Context, c *cacher.Cache, version string) ([]byte, error)
+	// only serve from cache if this is enabled
+	CacheEnabled() bool
 }
 
 // returns a handler or a defaulthandler if it cannot determine which one
@@ -73,4 +75,7 @@ func (d *defaulthandler) GetZip(ctx context.Context, c *cacher.Cache, w io.Write
 }
 func (d *defaulthandler) GetMod(ctx context.Context, c *cacher.Cache, version string) ([]byte, error) {
 	panic("do not call me")
+}
+func (d *defaulthandler) CacheEnabled() bool {
+	return false
 }
