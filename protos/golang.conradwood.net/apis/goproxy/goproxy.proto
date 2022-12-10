@@ -22,7 +22,7 @@ message ModuleInfoRequest {
 enum MODULETYPE {
   UNKNOWN=0; // unparseable
   PROTO=2;
-  LOCALMODULE=3;
+  ARTEFACT=3;
   EXTERNALMODULE=4;
 }
 
