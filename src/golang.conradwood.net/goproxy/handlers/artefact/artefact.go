@@ -3,6 +3,7 @@ package artefact
 import (
 	"bytes"
 	"context"
+	"flag"
 	"fmt"
 	artefact "golang.conradwood.net/apis/artefact"
 	git "golang.conradwood.net/apis/gitserver"
@@ -22,6 +23,7 @@ const (
 )
 
 var (
+	debug   = flag.Bool("debug_artefact", false, "if true debug artefact handler")
 	afcache = cache.New("artefact_version_cache", time.Duration(5)*time.Second, 1000)
 )
 
@@ -35,11 +37,11 @@ type afcacheentry struct {
 	versioninfolist []*pb.VersionInfo
 }
 
-func url2artefactid(ctx context.Context, url string) (*artefact.ArtefactID, error) {
+func (af *afhandler) url2artefactid(ctx context.Context, url string) (*artefact.ArtefactID, error) {
 	bur := &git.ByURLRequest{URL: url}
 	r, err := git.GetGIT2Client().RepoByURL(ctx, bur)
 	if err != nil {
-		fmt.Printf("no git repo by url \"%s\": %s\n", url, err)
+		af.Printf("no git repo by url \"%s\": %s\n", url, err)
 		return nil, nil
 	}
 	// we got a repo
@@ -51,8 +53,8 @@ func url2artefactid(ctx context.Context, url string) (*artefact.ArtefactID, erro
 	return afid, nil
 
 }
-func path2artefactid(ctx context.Context, path string) (*artefact.ArtefactID, string, error) {
-	fmt.Printf("resolving \"%s\" as artefact\n", path)
+func (af *afhandler) path2artefactid(ctx context.Context, path string) (*artefact.ArtefactID, string, error) {
+	af.Printf("resolving \"%s\" as artefact\n", path)
 	// we got to do some messy conversions, e.g. from
 	// "golang.singingcat.net/scgolib" to "git.singingcat.net/git/scgolib.git"
 	gu := []string{path}
@@ -66,7 +68,7 @@ func path2artefactid(ctx context.Context, path string) (*artefact.ArtefactID, st
 	gu = append(gu, "https://"+ghost+"/git/"+gpath+".git")
 
 	for _, g := range gu {
-		af, err := url2artefactid(ctx, g)
+		af, err := af.url2artefactid(ctx, g)
 		if err != nil {
 			return nil, "", err
 		}
@@ -78,12 +80,13 @@ func path2artefactid(ctx context.Context, path string) (*artefact.ArtefactID, st
 	if path == "golang.conradwood.net/go-easyops" {
 		return &artefact.ArtefactID{ID: 24, Domain: "conradwood.net", Name: "go-easysops"}, path, nil
 	}
-	fmt.Printf("Not an artefact: \"%s\"\n", path)
+	af.Printf("Not an artefact: \"%s\"\n", path)
 	return nil, "", nil
 }
 
 func HandlerByPath(ctx context.Context, path string) (*afhandler, error) {
-	afid, modpath, err := path2artefactid(ctx, path)
+	af := &afhandler{path: path}
+	afid, modpath, err := af.path2artefactid(ctx, path)
 	if err != nil {
 		return nil, err
 	}
@@ -91,7 +94,7 @@ func HandlerByPath(ctx context.Context, path string) (*afhandler, error) {
 		return nil, nil
 	}
 
-	fmt.Printf("artefact path: %s\n", path)
+	af.Printf("artefact path: %s\n", path)
 	ac := afcache.Get(modpath)
 	var ace *afcacheentry
 	if ac != nil {
@@ -101,12 +104,13 @@ func HandlerByPath(ctx context.Context, path string) (*afhandler, error) {
 		afcache.Put(modpath, ace)
 	}
 
-	res := &afhandler{artefactid: afid, modpath: modpath, path: path, cacheentry: ace}
-
-	return res, nil
+	af.artefactid = afid
+	af.modpath = modpath
+	af.cacheentry = ace
+	return af, nil
 }
 func (af *afhandler) ModuleInfo() *pb.ModuleInfo {
-	res := &pb.ModuleInfo{ModuleType: pb.MODULETYPE_LOCALMODULE}
+	res := &pb.ModuleInfo{ModuleType: pb.MODULETYPE_ARTEFACT}
 	if af.artefactid != nil {
 		res.Exists = true
 	}
@@ -119,7 +123,7 @@ func (af *afhandler) ListVersions(ctx context.Context) ([]*pb.VersionInfo, error
 	}
 	bl, err := artefact.GetArtefactClient().GetArtefactBuilds(ctx, af.artefactid)
 	if err != nil {
-		fmt.Printf("unable to get build for artefact: %s\n", err)
+		af.Printf("unable to get build for artefact: %s\n", err)
 		return nil, err
 	}
 	var res []*pb.VersionInfo
@@ -135,14 +139,14 @@ func (af *afhandler) ListVersions(ctx context.Context) ([]*pb.VersionInfo, error
 		ds, err := artefact.GetArtefactClient().GetDirListing(ctx, dlr)
 
 		if err != nil {
-			fmt.Printf("Build #%d does not have a module in \"%s\" (%s)\n", b, dlr.Dir, utils.ErrorString(err))
+			af.Printf("Build #%d does not have a module in \"%s\" (%s)\n", b, dlr.Dir, utils.ErrorString(err))
 			continue
 		}
 		if len(ds.Files) == 0 {
-			fmt.Printf("Build #%d does not have the required files for modules in \"%s\"", b, dlr.Dir)
+			af.Printf("Build #%d does not have the required files for modules in \"%s\"", b, dlr.Dir)
 			continue
 		}
-		fmt.Printf("Build #%d added as module in \"%s\"\n", b, dlr.Dir)
+		af.Printf("Build #%d added as module in \"%s\"\n", b, dlr.Dir)
 		res = append(res, v)
 	}
 	af.cacheentry.versioninfolist = res
@@ -175,7 +179,7 @@ func (af *afhandler) GetZip(ctx context.Context, c *cacher.Cache, w io.Writer, v
 	}
 	fi, err := artefact.GetArtefactClient().DoesFileExist(ctx, fr)
 	if err != nil {
-		fmt.Printf("Failed to check if file exists: %s\n", utils.ErrorString(err))
+		af.Printf("Failed to check if file exists: %s\n", utils.ErrorString(err))
 		return err
 	}
 	if !fi.Exists {
@@ -183,7 +187,7 @@ func (af *afhandler) GetZip(ctx context.Context, c *cacher.Cache, w io.Writer, v
 	}
 	stream, err := artefact.GetArtefactClient().GetFileStream(ctx, fr)
 	if err != nil {
-		fmt.Printf("failed to get mod.zip (%s)\n", utils.ErrorString(err))
+		af.Printf("failed to get mod.zip (%s)\n", utils.ErrorString(err))
 		return err
 	}
 	for {
@@ -192,12 +196,12 @@ func (af *afhandler) GetZip(ctx context.Context, c *cacher.Cache, w io.Writer, v
 			if err == io.EOF {
 				break
 			}
-			fmt.Printf("recv() error: %s\n", err)
+			af.Printf("recv() error: %s\n", err)
 			return err
 		}
 		_, err = w.Write(pl.Payload)
 		if err != nil {
-			fmt.Printf("write error: %s\n", err)
+			af.Printf("write error: %s\n", err)
 			return err
 		}
 	}
@@ -217,16 +221,16 @@ func (af *afhandler) GetMod(ctx context.Context, c *cacher.Cache, version string
 	}
 	fi, err := artefact.GetArtefactClient().DoesFileExist(ctx, fr)
 	if err != nil {
-		fmt.Printf("Failed to check if file exists: %s\n", utils.ErrorString(err))
+		af.Printf("Failed to check if file exists: %s\n", utils.ErrorString(err))
 		return nil, err
 	}
 	if !fi.Exists {
-		fmt.Printf("Returning standard go.mod file\n")
+		af.Printf("Returning standard go.mod file\n")
 		return []byte("module " + af.modpath), nil
 	}
 	stream, err := artefact.GetArtefactClient().GetFileStream(ctx, fr)
 	if err != nil {
-		fmt.Printf("failed to get go.mod (%s)\n", utils.ErrorString(err))
+		af.Printf("failed to get go.mod (%s)\n", utils.ErrorString(err))
 		return nil, err
 	}
 	var buf bytes.Buffer
@@ -236,12 +240,12 @@ func (af *afhandler) GetMod(ctx context.Context, c *cacher.Cache, version string
 			if err == io.EOF {
 				break
 			}
-			fmt.Printf("recv() error: %s\n", err)
+			af.Printf("recv() error: %s\n", err)
 			return nil, err
 		}
 		_, err = buf.Write(pl.Payload)
 		if err != nil {
-			fmt.Printf("write error: %s\n", err)
+			af.Printf("write error: %s\n", err)
 			return nil, err
 		}
 	}
@@ -270,4 +274,12 @@ func parseIDFromString(v string) (uint64, error) {
 }
 func (af *afhandler) CacheEnabled() bool {
 	return true
+}
+func (af *afhandler) Printf(format string, args ...interface{}) {
+	if !*debug {
+		return
+	}
+	s := "[artefacthandler] "
+	sn := fmt.Sprintf(format, args...)
+	fmt.Print(s + sn)
 }

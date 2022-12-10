@@ -37,9 +37,10 @@ type protoHandler struct {
 func HandlerByPath(ctx context.Context, path string) (*protoHandler, error) {
 	pn := &pr.PackageName{PackageName: path}
 	pack, err := pr.GetProtoRendererClient().GetPackageByName(ctx, pn)
+	ph := &protoHandler{pack: pack, path: path}
 	if err != nil {
 		if *debug {
-			fmt.Printf("No proto package for path \"%s\": %s\n", path, err)
+			ph.Printf("No proto package for path \"%s\": %s\n", path, err)
 		}
 		if isWellKnownProtoPath(path) {
 			// we know user means us (path matches a proto path), but it's wrong
@@ -47,10 +48,9 @@ func HandlerByPath(ctx context.Context, path string) (*protoHandler, error) {
 		}
 		return nil, nil
 	}
-	p := &protoHandler{pack: pack, path: path}
-	p.version, err = pr.GetProtoRendererClient().GetVersion(ctx, &common.Void{})
-	p.modname = path
-	return p, nil
+	ph.version, err = pr.GetProtoRendererClient().GetVersion(ctx, &common.Void{})
+	ph.modname = path
+	return ph, nil
 }
 func (ph *protoHandler) ModuleInfo() *pb.ModuleInfo {
 	res := &pb.ModuleInfo{ModuleType: pb.MODULETYPE_PROTO}
@@ -108,8 +108,8 @@ func (ph *protoHandler) GetZip(ctx context.Context, c *cacher.Cache, w io.Writer
 	if err != nil {
 		return err
 	}
-	//	fmt.Printf("Getting proto zip for package \"%s\", version \"%d\"\n", ph.pack.Name, ph.version.Version)
-	fmt.Printf("Requested version: \"%d\", current version: \"%d\"\n", vid, ph.version.Version)
+	//	ph.Printf("Getting proto zip for package \"%s\", version \"%d\"\n", ph.pack.Name, ph.version.Version)
+	ph.Printf("Requested version: \"%d\", current version: \"%d\"\n", vid, ph.version.Version)
 
 	// don't enforce version. instead we rely on caches (otherwise we are unable to build the cache)
 	/*
@@ -147,13 +147,13 @@ func (ph *protoHandler) GetZip(ctx context.Context, c *cacher.Cache, w io.Writer
 	for {
 		zf, err := srv.Recv()
 		if err != nil {
-			fmt.Printf("Err:%s\n", err)
+			ph.Printf("Err:%s\n", err)
 			if err == io.EOF {
 				break
 			}
 			return err
 		}
-		//		fmt.Printf("Gofile received: %s (%d bytes)\n", zf.Filename, len(zf.Payload))
+		//		ph.Printf("Gofile received: %s (%d bytes)\n", zf.Filename, len(zf.Payload))
 		if lastfile != zf.Filename && zf.Filename != "" {
 			lastfile = zf.Filename
 			curwriter, err = zw.Create(hh.Filename2ZipFilename(ph.modname, version, zf.Filename))
@@ -190,6 +190,11 @@ func (ph *protoHandler) GetMod(ctx context.Context, c *cacher.Cache, version str
 	}
 	return buf, nil
 }
-func (af *protoHandler) CacheEnabled() bool {
+func (ph *protoHandler) CacheEnabled() bool {
 	return true
+}
+func (ph *protoHandler) Printf(format string, args ...interface{}) {
+	s := "[protohandler] "
+	sn := fmt.Sprintf(format, args...)
+	fmt.Print(s + sn)
 }

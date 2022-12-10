@@ -18,6 +18,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"time"
 )
 
 var (
@@ -92,6 +93,7 @@ func (e *echoServer) streamHTTP(req *h2g.StreamRequest, srv streamer) error {
 		singleton_lock.Lock()
 		defer singleton_lock.Unlock()
 	}
+	sr := SingleRequest{}
 	fmt.Printf("-------------------\nStarted...\n")
 	ctx := srv.Context()
 	u := auth.GetUser(ctx)
@@ -146,7 +148,7 @@ func (e *echoServer) streamHTTP(req *h2g.StreamRequest, srv streamer) error {
 	if strings.HasSuffix(path, "/@v/list") {
 		err = serveList(handler, req, srv)
 	} else if strings.HasSuffix(path, "/@v/latest") {
-		err = fmt.Errorf("/@v/latest not support")
+		err = fmt.Errorf("/@v/latest not supported")
 	} else if strings.HasSuffix(path, "@latest") {
 		err = serveLatest(handler, req, srv)
 	} else if strings.HasSuffix(path, ".info") {
@@ -160,7 +162,11 @@ func (e *echoServer) streamHTTP(req *h2g.StreamRequest, srv streamer) error {
 		err = errors.NotFound(ctx, "invalid path \"%s\"", req.Path)
 	}
 	if err != nil {
-		fmt.Printf("Error for \"%s\" in %v: %s\n", path, mi.ModuleType, utils.ErrorString(err))
+		if errors.ToHTTPCode(err).ErrorCode == 404 {
+			fmt.Printf("[from %s] not found: \"%s\"\n", mi.ModuleType, path)
+		} else {
+			fmt.Printf("Error for \"%s\" in %v: %s\n", path, mi.ModuleType, utils.ErrorString(err))
+		}
 		return err
 	}
 	return nil
@@ -265,7 +271,8 @@ func serveLatest(handler handlers.Handler, req *h2g.StreamRequest, srv streamer)
 
 // serve requests suffixed by /@v/list
 func serveList(handler handlers.Handler, req *h2g.StreamRequest, srv streamer) error {
-	fmt.Printf("Serving list for \"%s\"\n", req.Path)
+	fmt.Printf("Serving list for \"%s\" from %v\n", req.Path, handler.ModuleInfo().ModuleType)
+	started := time.Now()
 	ctx := srv.Context()
 	vls, err := handler.ListVersions(ctx)
 	if err != nil {
@@ -278,6 +285,7 @@ func serveList(handler handlers.Handler, req *h2g.StreamRequest, srv streamer) e
 	for _, v := range vls {
 		res = versionToString(v) + "\n" + res
 	}
+	fmt.Printf("Created list for %s in %0.2fs\n", req.Path, time.Since(started).Seconds())
 	return sendBytes(srv, []byte(res))
 }
 func versionToString(v *pb.VersionInfo) string {

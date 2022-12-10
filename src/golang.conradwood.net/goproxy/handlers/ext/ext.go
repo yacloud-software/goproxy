@@ -53,8 +53,12 @@ func (e *exthandler) ListVersions(ctx context.Context) ([]*pb.VersionInfo, error
 	hr := h.Get(url)
 	err := hr.Error()
 	if err != nil {
-		fmt.Printf("Failed to access \"%s\": %s (%d)\n", url, err, hr.HTTPCode())
-		fmt.Printf("body:\n%s\n---endbody--\n", string(hr.Body()))
+		if hr.HTTPCode() == 404 {
+			e.Printf("not found: \"%s\"\n", url)
+		} else {
+			e.Printf("Failed to access \"%s\": %s (%d)\n", url, err, hr.HTTPCode())
+		}
+		//e.Printf("body:\n%s\n---endbody--\n", string(hr.Body()))
 		return nil, err
 	}
 	body := hr.Body()
@@ -71,13 +75,13 @@ func (e *exthandler) GetLatestVersion(ctx context.Context) (*pb.VersionInfo, err
 	h.SetTimeout(time.Duration(20) * time.Second)
 	u := "https://proxy.golang.org/" + e.path + "/@v/latest"
 	hr := h.Get(u)
-	fmt.Printf("External getting url \"%s\"\n", u)
+	e.Printf("External getting url \"%s\"\n", u)
 	err := hr.Error()
 	if err != nil {
 		return nil, err
 	}
 	b := hr.Body()
-	fmt.Printf("Response (latest): %s\n", string(b))
+	e.Printf("Response (latest): %s\n", string(b))
 	return nil, errors.NotFound(ctx, "'latest' not found", "'latest' not found")
 }
 func (e *exthandler) GetZip(ctx context.Context, c *cacher.Cache, w io.Writer, version string) error {
@@ -126,4 +130,9 @@ func (e *exthandler) CacheEnabled() bool {
 		return false
 	}
 	return true
+}
+func (e *exthandler) Printf(format string, args ...interface{}) {
+	s := "[exthandler] "
+	sn := fmt.Sprintf(format, args...)
+	fmt.Print(s + sn)
 }
