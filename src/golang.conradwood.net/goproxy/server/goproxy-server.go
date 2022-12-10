@@ -23,6 +23,20 @@ import (
 )
 
 var (
+	totalCounter = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "goproxy_total_requests",
+			Help: "V=1 UNIT=none DESC=incremented each time a request is received",
+		},
+		[]string{"reqtype"},
+	)
+	failCounter = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "goproxy_failed_requests",
+			Help: "V=1 UNIT=none DESC=incremented each time a request failed",
+		},
+		[]string{"reqtype"},
+	)
 	timsummary = prometheus.NewSummaryVec(
 		prometheus.SummaryOpts{
 			Name: "goproxy_req_timing",
@@ -48,6 +62,14 @@ type SingleRequest struct {
 	mi      *pb.ModuleInfo
 }
 
+func (sr *SingleRequest) promLabels() prometheus.Labels {
+	r := "undef"
+	if sr.mi != nil {
+		r = fmt.Sprintf("%v", sr.mi.ModuleType)
+	}
+	l := prometheus.Labels{"reqtype": r}
+	return l
+}
 func (sr *SingleRequest) Printf(format string, args ...interface{}) {
 	mis := ""
 	if sr.mi != nil {
@@ -62,7 +84,7 @@ func main() {
 	var err error
 	flag.Parse()
 	fmt.Printf("Starting GoProxyServer...\n")
-	prometheus.MustRegister(timsummary)
+	prometheus.MustRegister(timsummary, failCounter, totalCounter)
 	/*
 		gopr = &goproxy.Goproxy{}
 		gopr.Cacher = &cacher.GoCacher{}
@@ -146,17 +168,21 @@ func (e *echoServer) streamHTTP(req *h2g.StreamRequest, srv streamer) error {
 	if handler != nil {
 		sr.mi = handler.ModuleInfo()
 	}
+	totalCounter.With(sr.promLabels()).Inc()
 	if err != nil {
 		sr.Printf("failed\n")
+		failCounter.With(sr.promLabels()).Inc()
 		return err
 	}
 	if handler == nil {
+		failCounter.With(sr.promLabels()).Inc()
 		sr.Printf("No handler found for \"%s\".\n", path)
 		return errors.NotFound(ctx, "no handler \"%s\" found", path)
 	}
 	mi := handler.ModuleInfo()
 	if err != nil {
 		sr.Printf("no moduleinfo error\n")
+		failCounter.With(sr.promLabels()).Inc()
 		return err
 	}
 	if *debug {
@@ -175,10 +201,12 @@ func (e *echoServer) streamHTTP(req *h2g.StreamRequest, srv streamer) error {
 		}
 	}
 	if mi.ModuleType == pb.MODULETYPE_UNKNOWN {
+		failCounter.With(sr.promLabels()).Inc()
 		sr.Printf("unknown module serving this path\n")
 		return errors.InvalidArgs(ctx, "module \"%s\" resolved to unknown", path)
 	}
 	if !mi.Exists {
+		failCounter.With(sr.promLabels()).Inc()
 		sr.Printf("module serving this path does not exist\n")
 		return errors.NotFound(ctx, "no module \"%s\" found", path)
 	}
@@ -211,6 +239,7 @@ func (e *echoServer) streamHTTP(req *h2g.StreamRequest, srv streamer) error {
 		} else {
 			sr.Printf("Error for \"%s\" in %v: %s\n", path, mi.ModuleType, utils.ErrorString(err))
 		}
+		failCounter.With(sr.promLabels()).Inc()
 		return err
 	}
 	req_timing(fmt.Sprintf("%v", mi.ModuleType), reqtype, time.Since(sr.Started))
