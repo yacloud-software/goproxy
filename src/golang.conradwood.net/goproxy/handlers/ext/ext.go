@@ -54,7 +54,7 @@ func (e *exthandler) ListVersions(ctx context.Context) ([]*pb.VersionInfo, error
 	e.Printf("(list) Getting url \"%s\"...\n", url)
 	started := time.Now()
 	hr := h.Get(url)
-	e.Printf("Got response for url \"%s\" in %0.2fs\n", time.Since(started).Seconds())
+	e.Printf("Got response for url \"%s\" in %0.2fs\n", url, time.Since(started).Seconds())
 	err := hr.Error()
 	if err != nil {
 		if hr.HTTPCode() == 404 {
