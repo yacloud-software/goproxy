@@ -9,6 +9,7 @@ import (
 	h2g "golang.conradwood.net/apis/h2gproxy"
 	"golang.conradwood.net/go-easyops/auth"
 	"golang.conradwood.net/go-easyops/errors"
+	"golang.conradwood.net/go-easyops/prometheus"
 	"golang.conradwood.net/go-easyops/server"
 	"golang.conradwood.net/go-easyops/utils"
 	"golang.conradwood.net/goproxy/cacher"
@@ -22,6 +23,14 @@ import (
 )
 
 var (
+	timsummary = prometheus.NewSummaryVec(
+		prometheus.SummaryOpts{
+			Name: "goproxy_req_timing",
+			Help: "V=1 UNIT=s DESC=Summmary for observed requests",
+		},
+		[]string{"handler", "reqtype"},
+	)
+
 	singleton_lock sync.Mutex
 	singleton      = flag.Bool("singleton", false, "if true only allow one access at a time (for debugging)")
 	port           = flag.Int("port", 4100, "The grpc server port")
@@ -53,6 +62,7 @@ func main() {
 	var err error
 	flag.Parse()
 	fmt.Printf("Starting GoProxyServer...\n")
+	prometheus.MustRegister(timsummary)
 	/*
 		gopr = &goproxy.Goproxy{}
 		gopr.Cacher = &cacher.GoCacher{}
@@ -172,18 +182,24 @@ func (e *echoServer) streamHTTP(req *h2g.StreamRequest, srv streamer) error {
 		sr.Printf("module serving this path does not exist\n")
 		return errors.NotFound(ctx, "no module \"%s\" found", path)
 	}
-
+	reqtype := ""
 	if strings.HasSuffix(path, "/@v/list") {
+		reqtype = "list"
 		err = sr.serveList(handler, req, srv)
 	} else if strings.HasSuffix(path, "/@v/latest") {
+		reqtype = "latest"
 		err = fmt.Errorf("/@v/latest not supported")
 	} else if strings.HasSuffix(path, "@latest") {
+		reqtype = "latest"
 		err = sr.serveLatest(handler, req, srv)
 	} else if strings.HasSuffix(path, ".info") {
+		reqtype = "info"
 		err = sr.serveInfo(handler, req, srv)
 	} else if strings.HasSuffix(path, ".zip") {
+		reqtype = "zip"
 		err = sr.serveZip(handler, req, srv)
 	} else if strings.HasSuffix(path, ".mod") {
+		reqtype = "mod"
 		err = sr.serveMod(handler, req, srv)
 	} else {
 		// must be notfound so that go tries to download alternative paths
@@ -197,11 +213,14 @@ func (e *echoServer) streamHTTP(req *h2g.StreamRequest, srv streamer) error {
 		}
 		return err
 	}
+	req_timing(fmt.Sprintf("%v", mi.ModuleType), reqtype, time.Since(sr.Started))
 	sr.Printf("Completed in %0.2fs.\n", time.Since(sr.Started).Seconds())
 	return nil
-
 }
-
+func req_timing(modtype, reqtype string, dur time.Duration) {
+	l := prometheus.Labels{"handler": modtype, "reqtype": reqtype}
+	timsummary.With(l).Observe(dur.Seconds())
+}
 func versionFromPath(ctx context.Context, path string) (string, error) {
 	idx := strings.Index(path, "/@v/")
 	if idx == -1 {

@@ -128,7 +128,7 @@ func (af *afhandler) ListVersions(ctx context.Context) ([]*pb.VersionInfo, error
 	}
 	var res []*pb.VersionInfo
 	for _, b := range bl.Builds {
-		//TODO: fix gitbuilder to create zip files with v1.1.%d instead of 0.1.%d
+		//TODO: fix gitbuilder to create zip files with v1.1.%d instead of 0.1.%d (or both??)
 		v := &pb.VersionInfo{VersionName: fmt.Sprintf("v0.1.%d", b)}
 
 		dlr := &artefact.DirListRequest{
