@@ -15,7 +15,7 @@ import (
 
 var (
 	cache_ext     = flag.Bool("cache_ext_files", false, "if true cache external files")
-	use_urlcacher = flag.Bool("use_urlcacher", false, "if true, use url cacher for external urls")
+	use_urlcacher = flag.Bool("use_urlcacher", true, "if true, use url cacher for external urls")
 )
 
 type exthandler struct {
