@@ -49,6 +49,9 @@ func HandlerByPath(ctx context.Context, path string) (*protoHandler, error) {
 		return nil, nil
 	}
 	ph.version, err = pr.GetProtoRendererClient().GetVersion(ctx, &common.Void{})
+	if err != nil {
+		return nil, err
+	}
 	ph.modname = path
 	return ph, nil
 }

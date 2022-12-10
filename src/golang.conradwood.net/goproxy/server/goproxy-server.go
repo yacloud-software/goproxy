@@ -28,9 +28,25 @@ var (
 	http_port      = flag.Int("http_port", 4108, "The http server port")
 	gopr           *goproxy.Goproxy
 	debug          = flag.Bool("debug", false, "debug mode")
+	index          int
 )
 
 type echoServer struct {
+}
+type SingleRequest struct {
+	Prefix  string // for printing
+	Started time.Time
+	mi      *pb.ModuleInfo
+}
+
+func (sr *SingleRequest) Printf(format string, args ...interface{}) {
+	mis := ""
+	if sr.mi != nil {
+		mis = fmt.Sprintf("%v ", sr.mi.ModuleType)
+	}
+	pre := fmt.Sprintf("[%s %s%0.2fs] ", sr.Prefix, mis, time.Since(sr.Started).Seconds())
+	sn := fmt.Sprintf(format, args...)
+	fmt.Print(pre + sn)
 }
 
 func main() {
@@ -93,18 +109,23 @@ func (e *echoServer) streamHTTP(req *h2g.StreamRequest, srv streamer) error {
 		singleton_lock.Lock()
 		defer singleton_lock.Unlock()
 	}
-	sr := SingleRequest{}
-	fmt.Printf("-------------------\nStarted...\n")
+	index++
+	sr := SingleRequest{
+		Prefix:  fmt.Sprintf("%d", index),
+		Started: time.Now(),
+	}
+	sr.Printf("-------------------\nStarted...\n")
 	ctx := srv.Context()
 	u := auth.GetUser(ctx)
 	if u == nil {
+		sr.Printf("unauthenticated access failure\n")
 		if *debug {
 			fmt.Printf("Unauthenticated access to \"https://%s://%s\"\n", req.Host, req.Path)
 		}
 		return errors.Unauthenticated(ctx, "login required")
 	}
 	path := strings.TrimPrefix(req.Path, "/")
-	fmt.Printf("Access to path \"%s\" by %s\n", path, auth.Description(u))
+	sr.Printf("Access to path \"%s\" by %s\n", path, auth.Description(u))
 
 	idx := strings.Index(path, "/@v/")
 	find_path := path
@@ -112,15 +133,20 @@ func (e *echoServer) streamHTTP(req *h2g.StreamRequest, srv streamer) error {
 		find_path = path[:idx]
 	}
 	handler, err := handlers.HandlerByPath(ctx, find_path)
+	if handler != nil {
+		sr.mi = handler.ModuleInfo()
+	}
 	if err != nil {
+		sr.Printf("failed\n")
 		return err
 	}
 	if handler == nil {
-		fmt.Printf("No handler found for \"%s\".\n", path)
+		sr.Printf("No handler found for \"%s\".\n", path)
 		return errors.NotFound(ctx, "no handler \"%s\" found", path)
 	}
 	mi := handler.ModuleInfo()
 	if err != nil {
+		sr.Printf("no moduleinfo error\n")
 		return err
 	}
 	if *debug {
@@ -129,46 +155,49 @@ func (e *echoServer) streamHTTP(req *h2g.StreamRequest, srv streamer) error {
 			print = true
 		}
 		if print {
-			fmt.Printf("ModuleInfo for \"%s\"\n", find_path)
+			sr.Printf("ModuleInfo for \"%s\"\n", find_path)
 			if mi == nil {
 				fmt.Printf("None.\n")
 				return errors.NotFound(ctx, "no module \"%s\" found", path)
 			}
-			fmt.Printf("Type      : %s\n", mi.ModuleType)
-			fmt.Printf("Exists    : %v\n", mi.Exists)
+			sr.Printf("Type      : %s\n", mi.ModuleType)
+			sr.Printf("Exists    : %v\n", mi.Exists)
 		}
 	}
 	if mi.ModuleType == pb.MODULETYPE_UNKNOWN {
+		sr.Printf("unknown module serving this path\n")
 		return errors.InvalidArgs(ctx, "module \"%s\" resolved to unknown", path)
 	}
 	if !mi.Exists {
+		sr.Printf("module serving this path does not exist\n")
 		return errors.NotFound(ctx, "no module \"%s\" found", path)
 	}
 
 	if strings.HasSuffix(path, "/@v/list") {
-		err = serveList(handler, req, srv)
+		err = sr.serveList(handler, req, srv)
 	} else if strings.HasSuffix(path, "/@v/latest") {
 		err = fmt.Errorf("/@v/latest not supported")
 	} else if strings.HasSuffix(path, "@latest") {
-		err = serveLatest(handler, req, srv)
+		err = sr.serveLatest(handler, req, srv)
 	} else if strings.HasSuffix(path, ".info") {
-		err = serveInfo(handler, req, srv)
+		err = sr.serveInfo(handler, req, srv)
 	} else if strings.HasSuffix(path, ".zip") {
-		err = serveZip(handler, req, srv)
+		err = sr.serveZip(handler, req, srv)
 	} else if strings.HasSuffix(path, ".mod") {
-		err = serveMod(handler, req, srv)
+		err = sr.serveMod(handler, req, srv)
 	} else {
 		// must be notfound so that go tries to download alternative paths
 		err = errors.NotFound(ctx, "invalid path \"%s\"", req.Path)
 	}
 	if err != nil {
 		if errors.ToHTTPCode(err).ErrorCode == 404 {
-			fmt.Printf("[from %s] not found: \"%s\"\n", mi.ModuleType, path)
+			sr.Printf("[from %s] not found: \"%s\"\n", mi.ModuleType, path)
 		} else {
-			fmt.Printf("Error for \"%s\" in %v: %s\n", path, mi.ModuleType, utils.ErrorString(err))
+			sr.Printf("Error for \"%s\" in %v: %s\n", path, mi.ModuleType, utils.ErrorString(err))
 		}
 		return err
 	}
+	sr.Printf("Completed in %0.2fs.\n", time.Since(sr.Started).Seconds())
 	return nil
 
 }
@@ -189,20 +218,20 @@ func versionFromPath(ctx context.Context, path string) (string, error) {
 }
 
 // serve requests suffixed by /@v/[version].mod
-func serveMod(handler handlers.Handler, req *h2g.StreamRequest, srv streamer) error {
+func (sr *SingleRequest) serveMod(handler handlers.Handler, req *h2g.StreamRequest, srv streamer) error {
 	ctx := srv.Context()
 	version_string, err := versionFromPath(ctx, req.Path)
 	if err != nil {
 		return err
 	}
-	fmt.Printf("Version: \"%s\"\n", version_string)
+	sr.Printf("Version: \"%s\"\n", version_string)
 	nc, err := cacher.NewCacher(ctx, req.Path, version_string, "mod")
 	if err != nil {
 		return err
 	}
 	if handler.CacheEnabled() {
 		if nc.IsAvailable(ctx) {
-			fmt.Printf("Serving from cache...\n")
+			sr.Printf("Serving from cache...\n")
 			return nc.Get(ctx, func(data []byte) error {
 				return srv.Send(&h2g.StreamDataResponse{Data: data})
 			})
@@ -216,7 +245,7 @@ func serveMod(handler handlers.Handler, req *h2g.StreamRequest, srv streamer) er
 }
 
 // serve requests suffixed by /@v/[version].zip
-func serveZip(handler handlers.Handler, req *h2g.StreamRequest, srv streamer) error {
+func (sr *SingleRequest) serveZip(handler handlers.Handler, req *h2g.StreamRequest, srv streamer) error {
 	ctx := srv.Context()
 	version_string, err := versionFromPath(ctx, req.Path)
 	if err != nil {
@@ -228,13 +257,13 @@ func serveZip(handler handlers.Handler, req *h2g.StreamRequest, srv streamer) er
 	}
 	if handler.CacheEnabled() {
 		if nc.IsAvailable(ctx) {
-			fmt.Printf("Serving from cache...\n")
+			sr.Printf("Serving from cache...\n")
 			return nc.Get(ctx, func(data []byte) error {
 				return srv.Send(&h2g.StreamDataResponse{Data: data})
 			})
 		}
 	}
-	fmt.Printf("Version: \"%s\"\n", version_string)
+	sr.Printf("Version: \"%s\"\n", version_string)
 	sw := NewStreamWriter(srv)
 	err = handler.GetZip(ctx, nc, sw, version_string)
 	if err != nil {
@@ -244,34 +273,34 @@ func serveZip(handler handlers.Handler, req *h2g.StreamRequest, srv streamer) er
 }
 
 // serve requests suffixed by /@v/[version].info
-func serveInfo(handler handlers.Handler, req *h2g.StreamRequest, srv streamer) error {
-	fmt.Printf("Serving version for \"%s\"\n", req.Path)
+func (sr *SingleRequest) serveInfo(handler handlers.Handler, req *h2g.StreamRequest, srv streamer) error {
+	sr.Printf("Serving version for \"%s\"\n", req.Path)
 	ctx := srv.Context()
 	version_string, err := versionFromPath(ctx, req.Path)
 	if err != nil {
 		return err
 	}
-	fmt.Printf("Version: \"%s\"\n", version_string)
+	sr.Printf("Version: \"%s\"\n", version_string)
 	res := fmt.Sprintf(`{"Version":"%s"}`, version_string)
 	return sendBytes(srv, []byte(res))
 }
 
 // serve requests suffixed by /@v/latest
-func serveLatest(handler handlers.Handler, req *h2g.StreamRequest, srv streamer) error {
-	fmt.Printf("Serving latest for \"%s\"\n", req.Path)
+func (sr *SingleRequest) serveLatest(handler handlers.Handler, req *h2g.StreamRequest, srv streamer) error {
+	sr.Printf("Serving latest for \"%s\"\n", req.Path)
 	vi, err := handler.GetLatestVersion(srv.Context())
 	if err != nil {
 		return err
 	}
 	version_string := versionToString(vi)
-	fmt.Printf("Version: \"%s\"\n", version_string)
+	sr.Printf("Version: \"%s\"\n", version_string)
 	res := fmt.Sprintf(`{"Version":"%s"}`, version_string)
 	return sendBytes(srv, []byte(res))
 }
 
 // serve requests suffixed by /@v/list
-func serveList(handler handlers.Handler, req *h2g.StreamRequest, srv streamer) error {
-	fmt.Printf("Serving list for \"%s\" from %v\n", req.Path, handler.ModuleInfo().ModuleType)
+func (sr *SingleRequest) serveList(handler handlers.Handler, req *h2g.StreamRequest, srv streamer) error {
+	sr.Printf("Serving list for \"%s\" from %v\n", req.Path, handler.ModuleInfo().ModuleType)
 	started := time.Now()
 	ctx := srv.Context()
 	vls, err := handler.ListVersions(ctx)
@@ -285,7 +314,7 @@ func serveList(handler handlers.Handler, req *h2g.StreamRequest, srv streamer) e
 	for _, v := range vls {
 		res = versionToString(v) + "\n" + res
 	}
-	fmt.Printf("Created list for %s in %0.2fs\n", req.Path, time.Since(started).Seconds())
+	sr.Printf("Created list for %s in %0.2fs\n", req.Path, time.Since(started).Seconds())
 	return sendBytes(srv, []byte(res))
 }
 func versionToString(v *pb.VersionInfo) string {

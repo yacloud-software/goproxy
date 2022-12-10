@@ -14,6 +14,7 @@ import (
 )
 
 var (
+	debug         = flag.Bool("debug_exthandler", false, "if true debug exthandler")
 	cache_ext     = flag.Bool("cache_ext_files", false, "if true cache external files")
 	use_urlcacher = flag.Bool("use_urlcacher", true, "if true, use url cacher for external urls")
 )
@@ -50,18 +51,24 @@ func (e *exthandler) ListVersions(ctx context.Context) ([]*pb.VersionInfo, error
 	h := getHTTP(ctx)
 	h.SetTimeout(time.Duration(20) * time.Second)
 	url := "https://proxy.golang.org/" + e.path + "/@v/list"
+	e.Printf("(list) Getting url \"%s\"...\n", url)
+	started := time.Now()
 	hr := h.Get(url)
+	e.Printf("Got response for url \"%s\" in %0.2fs\n", time.Since(started).Seconds())
 	err := hr.Error()
 	if err != nil {
 		if hr.HTTPCode() == 404 {
-			e.Printf("not found: \"%s\"\n", url)
+			e.Printf("(list) not found: \"%s\"\n", url)
 		} else {
-			e.Printf("Failed to access \"%s\": %s (%d)\n", url, err, hr.HTTPCode())
+			e.Printf("(list) Failed to access \"%s\": %s (%d)\n", url, err, hr.HTTPCode())
 		}
 		//e.Printf("body:\n%s\n---endbody--\n", string(hr.Body()))
 		return nil, err
 	}
+	e.Printf("(list) Reading response body for url \"%s\"\n", url)
+	started = time.Now()
 	body := hr.Body()
+	e.Printf("(list) Read body for url %s in %0.2fs\n", url, time.Since(started).Seconds())
 	var res []*pb.VersionInfo
 	for _, line := range strings.Split(string(body), "\n") {
 		v := &pb.VersionInfo{VersionName: line}
@@ -132,6 +139,9 @@ func (e *exthandler) CacheEnabled() bool {
 	return true
 }
 func (e *exthandler) Printf(format string, args ...interface{}) {
+	if !*debug {
+		return
+	}
 	s := "[exthandler] "
 	sn := fmt.Sprintf(format, args...)
 	fmt.Print(s + sn)
