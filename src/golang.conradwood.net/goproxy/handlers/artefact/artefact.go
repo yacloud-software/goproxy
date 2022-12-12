@@ -23,10 +23,16 @@ const (
 )
 
 var (
-	debug   = flag.Bool("debug_artefact", false, "if true debug artefact handler")
-	afcache = cache.New("artefact_version_cache", time.Duration(5)*time.Second, 1000)
+	debug     = flag.Bool("debug_artefact", false, "if true debug artefact handler")
+	afcache   = cache.New("artefact_version_cache", time.Duration(5)*time.Second, 1000)
+	afidcache = cache.New("artefact_id_for_url", time.Duration(24)*time.Hour, 1000)
 )
 
+type afidcache_entry struct {
+	err     error
+	afid    *artefact.ArtefactID
+	created time.Time
+}
 type afhandler struct {
 	artefactid *artefact.ArtefactID
 	path       string
@@ -38,6 +44,19 @@ type afcacheentry struct {
 }
 
 func (af *afhandler) url2artefactid(ctx context.Context, url string) (*artefact.ArtefactID, error) {
+	afide := afidcache.Get(url)
+	if afide != nil {
+		afid := afide.(*afidcache_entry)
+		if afid.err != nil {
+			// last time it errored
+			if time.Since(afid.created) < time.Duration(15)*time.Second { // negative (error) caching time
+				return nil, afid.err
+			}
+		} else {
+			// last time it did not error
+			return afid.afid, nil
+		}
+	}
 	bur := &git.ByURLRequest{URL: url}
 	r, err := git.GetGIT2Client().RepoByURL(ctx, bur)
 	if err != nil {
@@ -45,11 +64,16 @@ func (af *afhandler) url2artefactid(ctx context.Context, url string) (*artefact.
 		return nil, nil
 	}
 	// we got a repo
+	nc := &afidcache_entry{created: time.Now()}
 	repoid := r.ID
 	afid, err := artefact.GetArtefactClient().GetArtefactIDForRepo(ctx, &artefact.ID{ID: repoid})
 	if err != nil {
+		nc.err = err
+		afidcache.Put(url, nc)
 		return nil, err
 	}
+	nc.afid = afid
+	afidcache.Put(url, nc)
 	return afid, nil
 
 }
