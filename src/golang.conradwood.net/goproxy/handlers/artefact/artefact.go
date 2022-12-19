@@ -12,6 +12,7 @@ import (
 	"golang.conradwood.net/go-easyops/errors"
 	"golang.conradwood.net/go-easyops/utils"
 	"golang.conradwood.net/goproxy/cacher"
+	"golang.conradwood.net/goproxy/hosts"
 	"io"
 	"strconv"
 	"strings"
@@ -126,12 +127,20 @@ func (af *afhandler) path2artefactid(ctx context.Context, path string) (*afresol
 // return nil means we are not responsible
 func HandlerByPath(ctx context.Context, path string) (*afhandler, error) {
 	af := &afhandler{path: path}
+	b, err := hosts.IsOneOfUs(ctx, path)
+	if err != nil {
+		return nil, err
+	}
+	if !b {
+		return nil, nil
+	}
 	afid, modpath, err := af.path2artefactid(ctx, path)
 	if err != nil {
 		return nil, err
 	}
+
 	if afid == nil {
-		return nil, nil
+		return &afhandler{}, nil
 	}
 
 	af.Printf("artefact path: %s\n", path)
