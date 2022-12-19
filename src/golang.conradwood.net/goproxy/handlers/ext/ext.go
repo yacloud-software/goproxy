@@ -53,7 +53,7 @@ func (e *exthandler) ListVersions(ctx context.Context) ([]*pb.VersionInfo, error
 	}
 	h := getHTTP(ctx)
 	h.SetTimeout(time.Duration(20) * time.Second)
-	url := "https://proxy.golang.org/" + e.path + "/@v/list"
+	url := e.buildurl(e.path + "/@v/list")
 	e.Printf("(list) Getting url \"%s\"...\n", url)
 	started := time.Now()
 	hr := h.Get(url)
@@ -83,7 +83,7 @@ func (e *exthandler) ListVersions(ctx context.Context) ([]*pb.VersionInfo, error
 func (e *exthandler) GetLatestVersion(ctx context.Context) (*pb.VersionInfo, error) {
 	h := getHTTP(ctx)
 	h.SetTimeout(time.Duration(20) * time.Second)
-	u := "https://proxy.golang.org/" + e.path + "/@v/latest"
+	u := e.buildurl(e.path + "/@v/latest")
 	hr := h.Get(u)
 	e.Printf("External getting url \"%s\"\n", u)
 	err := hr.Error()
@@ -97,7 +97,9 @@ func (e *exthandler) GetLatestVersion(ctx context.Context) (*pb.VersionInfo, err
 func (e *exthandler) GetZip(ctx context.Context, c *cacher.Cache, w io.Writer, version string) error {
 	h := getHTTP(ctx)
 	h.SetTimeout(time.Duration(20) * time.Second)
-	hr := h.Get("https://proxy.golang.org/" + e.path + "/@v/" + version + ".zip")
+	url := e.buildurl(e.path + "/@v/" + version + ".zip")
+	e.Printf("External getting url \"%s\"\n", url)
+	hr := h.Get(url)
 	err := hr.Error()
 	if err != nil {
 		return err
@@ -118,7 +120,9 @@ func (e *exthandler) GetZip(ctx context.Context, c *cacher.Cache, w io.Writer, v
 func (e *exthandler) GetMod(ctx context.Context, c *cacher.Cache, version string) ([]byte, error) {
 	h := getHTTP(ctx)
 	h.SetTimeout(time.Duration(20) * time.Second)
-	hr := h.Get("https://proxy.golang.org/" + e.path + "/@v/" + version + ".mod")
+	url := e.buildurl(e.path + "/@v/" + version + ".mod")
+	e.Printf("Getting url \"%s\"\n", url)
+	hr := h.Get(url)
 	err := hr.Error()
 	if err != nil {
 		return nil, err
@@ -131,6 +135,10 @@ func (e *exthandler) GetMod(ctx context.Context, c *cacher.Cache, version string
 		}
 	}
 	return b, nil
+}
+func (e *exthandler) buildurl(path string) string {
+	//return "https://proxy.golang.org/" + path
+	return "https://" + path
 }
 func (e *exthandler) CacheEnabled() bool {
 	if !*cache_ext {

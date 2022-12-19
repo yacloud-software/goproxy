@@ -34,7 +34,7 @@ type afidcache_entry struct {
 	created time.Time
 }
 type afhandler struct {
-	artefactid *artefact.ArtefactID
+	afresolved *afresolved
 	path       string
 	modpath    string
 	cacheentry *afcacheentry
@@ -42,8 +42,12 @@ type afhandler struct {
 type afcacheentry struct {
 	versioninfolist []*pb.VersionInfo
 }
+type afresolved struct {
+	afid      *artefact.ArtefactID
+	PathMatch bool // if asked for, say, golang.conradwood.net/go-easyops/utils this will be false (because path is too long/too specific)
+}
 
-func (af *afhandler) url2artefactid(ctx context.Context, url string) (*artefact.ArtefactID, error) {
+func (af *afhandler) url2artefactid(ctx context.Context, url string) (*afresolved, error) {
 	afide := afidcache.Get(url)
 	if afide != nil {
 		afid := afide.(*afidcache_entry)
@@ -54,7 +58,7 @@ func (af *afhandler) url2artefactid(ctx context.Context, url string) (*artefact.
 			}
 		} else {
 			// last time it did not error
-			return afid.afid, nil
+			return &afresolved{afid: afid.afid, PathMatch: true}, nil
 		}
 	}
 	bur := &git.ByURLRequest{URL: url}
@@ -64,7 +68,7 @@ func (af *afhandler) url2artefactid(ctx context.Context, url string) (*artefact.
 		return nil, err
 	}
 	if !rr.Found {
-		af.Printf("no git repo by url \"%s\": %s\n", url, err)
+		af.Printf("no git repo by url \"%s\"\n", url)
 		return nil, nil
 	}
 	r := rr.Repository
@@ -79,10 +83,10 @@ func (af *afhandler) url2artefactid(ctx context.Context, url string) (*artefact.
 	}
 	nc.afid = afid
 	afidcache.Put(url, nc)
-	return afid, nil
+	return &afresolved{afid: afid, PathMatch: true}, nil
 
 }
-func (af *afhandler) path2artefactid(ctx context.Context, path string) (*artefact.ArtefactID, string, error) {
+func (af *afhandler) path2artefactid(ctx context.Context, path string) (*afresolved, string, error) {
 	af.Printf("resolving \"%s\" as artefact\n", path)
 	// we got to do some messy conversions, e.g. from
 	// "golang.singingcat.net/scgolib" to "git.singingcat.net/git/scgolib.git"
@@ -107,7 +111,12 @@ func (af *afhandler) path2artefactid(ctx context.Context, path string) (*artefac
 	}
 
 	if path == "golang.conradwood.net/go-easyops" {
-		return &artefact.ArtefactID{ID: 24, Domain: "conradwood.net", Name: "go-easysops"}, path, nil
+		afid := &artefact.ArtefactID{ID: 24, Domain: "conradwood.net", Name: "go-easysops"}
+		return &afresolved{afid: afid, PathMatch: true}, path, nil
+	}
+	if strings.Contains(path, "golang.conradwood.net/go-easyops") {
+		afid := &artefact.ArtefactID{ID: 24, Domain: "conradwood.net", Name: "go-easysops"}
+		return &afresolved{afid: afid, PathMatch: false}, path, nil
 	}
 	af.Printf("Not an artefact: \"%s\"\n", path)
 	return nil, "", nil
@@ -135,14 +144,14 @@ func HandlerByPath(ctx context.Context, path string) (*afhandler, error) {
 		afcache.Put(modpath, ace)
 	}
 
-	af.artefactid = afid
+	af.afresolved = afid
 	af.modpath = modpath
 	af.cacheentry = ace
 	return af, nil
 }
 func (af *afhandler) ModuleInfo() *pb.ModuleInfo {
 	res := &pb.ModuleInfo{ModuleType: pb.MODULETYPE_ARTEFACT}
-	if af.artefactid != nil {
+	if af.afresolved != nil && af.afresolved.PathMatch {
 		res.Exists = true
 	}
 	return res
@@ -152,32 +161,29 @@ func (af *afhandler) ListVersions(ctx context.Context) ([]*pb.VersionInfo, error
 	if af.cacheentry.versioninfolist != nil {
 		return af.cacheentry.versioninfolist, nil
 	}
-	bl, err := artefact.GetArtefactClient().GetArtefactBuilds(ctx, af.artefactid)
+	if !af.afresolved.PathMatch {
+		return nil, errors.NotFound(ctx, "path not found (incomplete pathmatch)")
+	}
+	bl, err := artefact.GetArtefactClient().GetArtefactBuilds(ctx, af.afresolved.afid)
 	if err != nil {
 		af.Printf("unable to get build for artefact: %s\n", err)
 		return nil, err
 	}
 	var res []*pb.VersionInfo
 	for _, b := range bl.Builds {
-		//TODO: fix gitbuilder to create zip files with v1.1.%d instead of 0.1.%d (or both??)
-		v := &pb.VersionInfo{VersionName: fmt.Sprintf("v0.1.%d", b)}
-
-		dlr := &artefact.DirListRequest{
-			Build:      b,
-			ArtefactID: af.artefactid.ID,
-			Dir:        MODULEDIR + af.modpath,
-		}
-		ds, err := artefact.GetArtefactClient().GetDirListing(ctx, dlr)
+		dir := MODULEDIR + af.modpath
+		hasmod, err := af.check_if_has_file(ctx, b, af.afresolved.afid.ID, dir)
 
 		if err != nil {
-			af.Printf("Build #%d does not have a module in \"%s\" (%s)\n", b, dlr.Dir, utils.ErrorString(err))
+			af.Printf("Build #%d does not have a module in \"%s\" (%s)\n", b, dir, utils.ErrorString(err))
 			continue
 		}
-		if len(ds.Files) == 0 {
-			af.Printf("Build #%d does not have the required files for modules in \"%s\"", b, dlr.Dir)
+		if !hasmod {
+			af.Printf("Build #%d does not have the required files for modules in \"%s\"", b, dir)
 			continue
 		}
-		af.Printf("Build #%d added as module in \"%s\"\n", b, dlr.Dir)
+		af.Printf("Build #%d added as module in \"%s\"\n", b, dir)
+		v := &pb.VersionInfo{VersionName: fmt.Sprintf("v0.1.%d", b)}
 		res = append(res, v)
 	}
 	af.cacheentry.versioninfolist = res
@@ -187,6 +193,9 @@ func (af *afhandler) ListVersions(ctx context.Context) ([]*pb.VersionInfo, error
 
 // return a versioninfo from a go string (e.g. "v0.120.0")
 func (af *afhandler) GetLatestVersion(ctx context.Context) (*pb.VersionInfo, error) {
+	if !af.afresolved.PathMatch {
+		return nil, errors.NotFound(ctx, "path not found (incomplete pathmatch)")
+	}
 	versions, err := af.ListVersions(ctx)
 	if err != nil {
 		return nil, err
@@ -199,12 +208,15 @@ func (af *afhandler) GetLatestVersion(ctx context.Context) (*pb.VersionInfo, err
 
 // get the zip file for a version
 func (af *afhandler) GetZip(ctx context.Context, c *cacher.Cache, w io.Writer, version string) error {
+	if !af.afresolved.PathMatch {
+		return errors.NotFound(ctx, "path not found (incomplete pathmatch)")
+	}
 	buildid, err := parseIDFromString(version)
 	if err != nil {
 		return err
 	}
 	fr := &artefact.FileRequest{
-		ArtefactID: af.artefactid.ID,
+		ArtefactID: af.afresolved.afid.ID,
 		Build:      buildid,
 		Filename:   MODULEDIR + af.modpath + "/mod.zip",
 	}
@@ -241,12 +253,15 @@ func (af *afhandler) GetZip(ctx context.Context, c *cacher.Cache, w io.Writer, v
 
 // get the go.mod (url like .../@v/[version].mod
 func (af *afhandler) GetMod(ctx context.Context, c *cacher.Cache, version string) ([]byte, error) {
+	if !af.afresolved.PathMatch {
+		return nil, errors.NotFound(ctx, "path not found (incomplete pathmatch)")
+	}
 	buildid, err := parseIDFromString(version)
 	if err != nil {
 		return nil, err
 	}
 	fr := &artefact.FileRequest{
-		ArtefactID: af.artefactid.ID,
+		ArtefactID: af.afresolved.afid.ID,
 		Build:      buildid,
 		Filename:   MODULEDIR + af.modpath + "/go.mod",
 	}
