@@ -58,16 +58,11 @@ func (af *afhandler) url2artefactid(ctx context.Context, url string) (*artefact.
 		}
 	}
 	bur := &git.ByURLRequest{URL: url}
-	rr, err := git.GetGIT2Client().FindRepoByURL(ctx, bur)
+	r, err := git.GetGIT2Client().RepoByURL(ctx, bur)
 	if err != nil {
-		af.Printf("failed to find git repo by url \"%s\": %s\n", url, err)
-		return nil, err
-	}
-	if !rr.Found {
 		af.Printf("no git repo by url \"%s\": %s\n", url, err)
 		return nil, nil
 	}
-	r := rr.Repository
 	// we got a repo
 	nc := &afidcache_entry{created: time.Now()}
 	repoid := r.ID
@@ -113,6 +108,8 @@ func (af *afhandler) path2artefactid(ctx context.Context, path string) (*artefac
 	return nil, "", nil
 }
 
+// this is where the resolver comes in.
+// return nil means we are not responsible
 func HandlerByPath(ctx context.Context, path string) (*afhandler, error) {
 	af := &afhandler{path: path}
 	afid, modpath, err := af.path2artefactid(ctx, path)

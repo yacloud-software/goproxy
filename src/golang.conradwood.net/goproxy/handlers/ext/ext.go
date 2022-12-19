@@ -48,6 +48,9 @@ func getHTTP(ctx context.Context) http.HTTPIF {
 
 }
 func (e *exthandler) ListVersions(ctx context.Context) ([]*pb.VersionInfo, error) {
+	if strings.HasPrefix(e.path, "golang.conradwood.net") {
+		return nil, errors.NotFound(ctx, "not implemented, must handle local paths")
+	}
 	h := getHTTP(ctx)
 	h.SetTimeout(time.Duration(20) * time.Second)
 	url := "https://proxy.golang.org/" + e.path + "/@v/list"
