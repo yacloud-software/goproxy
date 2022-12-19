@@ -58,11 +58,16 @@ func (af *afhandler) url2artefactid(ctx context.Context, url string) (*artefact.
 		}
 	}
 	bur := &git.ByURLRequest{URL: url}
-	r, err := git.GetGIT2Client().RepoByURL(ctx, bur)
+	rr, err := git.GetGIT2Client().FindRepoByURL(ctx, bur)
 	if err != nil {
+		af.Printf("failed to find git repo by url \"%s\": %s\n", url, err)
+		return nil, err
+	}
+	if !rr.Found {
 		af.Printf("no git repo by url \"%s\": %s\n", url, err)
 		return nil, nil
 	}
+	r := rr.Repository
 	// we got a repo
 	nc := &afidcache_entry{created: time.Now()}
 	repoid := r.ID
