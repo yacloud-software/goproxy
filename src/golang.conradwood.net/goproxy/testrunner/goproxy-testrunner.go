@@ -13,6 +13,7 @@ import (
 )
 
 var (
+	enable       = flag.Bool("enable", true, "if false, do not run tests")
 	totalCounter = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "goproxy_testrunner_total_requests",
@@ -69,6 +70,9 @@ func testrunner() {
 	for {
 		time.Sleep(t)
 		t = time.Duration(120) * time.Second
+		if !*enable {
+			continue
+		}
 		var testruns []testrun
 		testruns = append(testruns, &testrun1{})
 		for _, test := range testruns {
