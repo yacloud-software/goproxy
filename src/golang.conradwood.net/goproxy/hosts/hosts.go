@@ -11,6 +11,9 @@ var (
 		"golang.conradwood.net",
 		"golang.singingcat.net",
 		"golang.yacloud.eu",
+		"git.conradwood.net",
+		"git.singingcat.net",
+		"git.yacloud.eu",
 	}
 )
 
