@@ -140,6 +140,8 @@ golang.conradwood.net/apis/objectstore v1.1.2044 h1:aXxy4kZIq1ikRrwqM38/aqCA1I5a
 golang.conradwood.net/apis/objectstore v1.1.2044/go.mod h1:e2yf47IrPI8nSmbDODyI1zvhtP/f22VWK32GvFZgYjU=
 golang.conradwood.net/apis/objectstore v1.1.2049 h1:PAOogTrS7FoKyUgM6eY5K5w28bhDBtpGAxrs3ED1AXk=
 golang.conradwood.net/apis/objectstore v1.1.2049/go.mod h1:e2yf47IrPI8nSmbDODyI1zvhtP/f22VWK32GvFZgYjU=
+golang.conradwood.net/apis/objectstore v1.1.2053 h1:cD31is4R4hD+BfSbQy6mLv/5IAP8gGkYLjIRa+yCxCo=
+golang.conradwood.net/apis/objectstore v1.1.2053/go.mod h1:e2yf47IrPI8nSmbDODyI1zvhtP/f22VWK32GvFZgYjU=
 golang.conradwood.net/apis/protorenderer v1.1.2024 h1:W3MFxoG1icybGF+tJHX58bt9R/kL5OvAT7p2sXsY72g=
 golang.conradwood.net/apis/protorenderer v1.1.2024/go.mod h1:icBdhxNJPjHEoRw2PP5+sLoVwlnK+XyQ4JT7dlVVLuo=
 golang.conradwood.net/apis/protorenderer v1.1.2029 h1:NnmJp0bfL7b8aNhj0WpmAMEyX9f8wOiD2IE8Q1CuUQU=

@@ -10,7 +10,7 @@ require (
 	golang.conradwood.net/apis/gomodule v1.1.2049
 	golang.conradwood.net/apis/goproxy v1.1.1877
 	golang.conradwood.net/apis/h2gproxy v1.1.2049
-	golang.conradwood.net/apis/objectstore v1.1.2049
+	golang.conradwood.net/apis/objectstore v1.1.2053
 	golang.conradwood.net/apis/protorenderer v1.1.2049
 	golang.conradwood.net/go-easyops v0.1.14760
 	google.golang.org/grpc v1.51.0
