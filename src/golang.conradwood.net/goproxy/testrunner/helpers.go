@@ -79,11 +79,12 @@ func go_update_all(dir string) error {
 
 func go_env() []string {
 	creds, err := get_auth()
+	authstring := ""
 	if err != nil {
 		fmt.Printf("Error getting auth: %s\n", utils.ErrorString(err))
-		panic("no auth")
+	} else {
+		authstring = fmt.Sprintf("%s.token:%s", creds.userid, creds.token)
 	}
-	authstring := fmt.Sprintf("%s.token:%s", creds.userid, creds.token)
 	res := []string{
 		"GOPROXY=" + fmt.Sprintf(goproxy, authstring),
 		"HOME=/tmp/x",
