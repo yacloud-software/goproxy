@@ -46,6 +46,8 @@ golang.conradwood.net/apis/auth v1.1.2044 h1:l7SYhfW33j9IyY5fHZMR7rWjcesnrnX/9IG
 golang.conradwood.net/apis/auth v1.1.2044/go.mod h1:13gt/TDpM3GL+i/FAo5uohTL8ul/eavR7zTAJ4PSS9I=
 golang.conradwood.net/apis/auth v1.1.2049 h1:3kPDcNRBHZUnXo2GbLJ1f1OxMCyXErZ0t5LyZpiyGmQ=
 golang.conradwood.net/apis/auth v1.1.2049/go.mod h1:13gt/TDpM3GL+i/FAo5uohTL8ul/eavR7zTAJ4PSS9I=
+golang.conradwood.net/apis/auth v1.1.2051 h1:9r1TsmXi8YMpaVsmdMwnQsDXP/uk1zkRRGiWu0bjcqM=
+golang.conradwood.net/apis/auth v1.1.2051/go.mod h1:13gt/TDpM3GL+i/FAo5uohTL8ul/eavR7zTAJ4PSS9I=
 golang.conradwood.net/apis/autodeployer v1.1.2027 h1:FuCMat51Ze+4bvuvFqRcogX5O51/aapVAjGWZGhk9Dk=
 golang.conradwood.net/apis/autodeployer v1.1.2027/go.mod h1:1N49+5L0Lvty7l+HOnN/S6y2UZOL3qFkGCcoXVdxqQo=
 golang.conradwood.net/apis/autodeployer v1.1.2029 h1:EJW33MNum2Kd+6wc+O5RhVOKH0p1Eo0sWpaGXkanJRE=

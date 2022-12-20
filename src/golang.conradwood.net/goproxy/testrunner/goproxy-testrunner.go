@@ -62,6 +62,7 @@ func main() {
 	utils.Bail("Unable to start server", err)
 	os.Exit(0)
 }
+
 func testrunner() {
 	t := time.Duration(2) * time.Second
 
@@ -71,6 +72,11 @@ func testrunner() {
 		var testruns []testrun
 		testruns = append(testruns, &testrun1{})
 		for _, test := range testruns {
+			err := utils.RecreateSafely(godir())
+			if err != nil {
+				fmt.Printf("Failed to recreate godir (%s): %s\n", godir(), err)
+				continue
+			}
 			for section := 0; section < test.Sections(); section++ {
 				l := prometheus.Labels{"test": "test1", "section": fmt.Sprintf("%d", section)}
 				totalCounter.With(l).Inc()
@@ -80,7 +86,7 @@ func testrunner() {
 				dur := time.Since(started).Seconds()
 				if err != nil {
 					failCounter.With(l).Inc()
-					test.Printf("TestRun section %d failed: %s\n", section, err)
+					test.Printf("TestRun section %d failed: %s\n", section, utils.ErrorString(err))
 					break
 				} else {
 					test.Printf("section %d completed after %0.2fs\n", section, dur)

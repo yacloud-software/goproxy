@@ -6,19 +6,29 @@ import (
 	"golang.conradwood.net/apis/auth"
 	"golang.conradwood.net/apis/common"
 	"golang.conradwood.net/go-easyops/authremote"
+	cm "golang.conradwood.net/go-easyops/common"
 	"golang.conradwood.net/go-easyops/linux"
-	"golang.conradwood.net/go-easyops/utils"
+	//	"golang.conradwood.net/go-easyops/utils"
+	"path/filepath"
 	"time"
 )
 
 const (
-	gocmd   = "/opt/yacloud/ctools/dev/go/current/go/bin/go"
+	gocmd = "/opt/yacloud/ctools/dev/go/current/go/bin/go"
+	//	goproxy = "https://%s@l.conradwood.net,direct"
 	goproxy = "https://%s@goproxy.conradwood.net,direct"
 )
 
 var (
-	runtime = flag.Duration("max_runtime", time.Duration(600)*time.Second, "go stuff runtime")
+	prober_user = flag.String("prober_user", "", "username for access")
+	prober_pw   = flag.String("prober_password", "", "password for access")
+	runtime     = flag.Duration("max_runtime", time.Duration(600)*time.Second, "go stuff runtime")
+	cur_path    string
 )
+
+func init() {
+	cur_path, _ = filepath.Abs(".")
+}
 
 func copy_file(src, dest string) error {
 	return linux.Copy(src, dest)
@@ -39,7 +49,11 @@ func copy_file(src, dest string) error {
 func go_compile(dir, filename string) error {
 	l := linux.New()
 	l.SetRuntime(*runtime)
-	l.SetEnvironment(go_env())
+	creds, err := get_auth()
+	if err != nil {
+		return err
+	}
+	l.SetEnvironment(go_env(creds))
 	com := []string{gocmd, "install", filename}
 	out, err := l.SafelyExecuteWithDir(com, dir, nil)
 	if err != nil {
@@ -53,7 +67,11 @@ func go_compile(dir, filename string) error {
 func go_mod_tidy(dir string) error {
 	l := linux.New()
 	l.SetRuntime(*runtime)
-	l.SetEnvironment(go_env())
+	creds, err := get_auth()
+	if err != nil {
+		return err
+	}
+	l.SetEnvironment(go_env(creds))
 	com := []string{gocmd, "mod", "tidy"}
 	out, err := l.SafelyExecuteWithDir(com, dir, nil)
 	if err != nil {
@@ -67,7 +85,11 @@ func go_mod_tidy(dir string) error {
 func go_update_all(dir string) error {
 	l := linux.New()
 	l.SetRuntime(*runtime)
-	l.SetEnvironment(go_env())
+	creds, err := get_auth()
+	if err != nil {
+		return err
+	}
+	l.SetEnvironment(go_env(creds))
 	com := []string{gocmd, "get", "-u", "all"}
 	out, err := l.SafelyExecuteWithDir(com, dir, nil)
 	if err != nil {
@@ -76,17 +98,25 @@ func go_update_all(dir string) error {
 	}
 	return nil
 }
-
-func go_env() []string {
-	creds, err := get_auth()
-	authstring := ""
-	if err != nil {
-		fmt.Printf("Error getting auth: %s\n", utils.ErrorString(err))
-	} else {
-		authstring = fmt.Sprintf("%s.token:%s", creds.userid, creds.token)
+func godir() string {
+	godir := cur_path + "/gostuff"
+	return godir
+}
+func go_env(c *creds) []string {
+	authstring := fmt.Sprintf("%s.token:%s", c.userid, c.token)
+	gop := "GOPROXY=" + fmt.Sprintf(goproxy, authstring)
+	if *debug {
+		fmt.Println(gop)
+		fmt.Printf("gostuff = %s\n", godir())
 	}
 	res := []string{
-		"GOPROXY=" + fmt.Sprintf(goproxy, authstring),
+		gop,
+		"GOSUMDB=off",
+		"GOPATH=" + godir() + "/gopath",
+		"GOTMP=" + godir() + "/gotmp",
+		"GOMODCACHE=" + godir() + "/gomodcache",
+		"GOCACHE=" + godir() + "/gocache",
+		"GO111MODULE=on",
 		"HOME=/tmp/x",
 	}
 	return res
@@ -99,14 +129,27 @@ type creds struct {
 
 func get_auth() (*creds, error) {
 	ctx := authremote.Context()
+	if *prober_user != "" {
+		apr := &auth.AuthenticatePasswordRequest{
+			Email:    *prober_user,
+			Password: *prober_pw,
+		}
+		cw, err := authremote.GetAuthClient().SignedGetByPassword(ctx, apr)
+		if err != nil {
+			fmt.Printf("Failed to get user \"%s\": %s\n", *prober_user, err)
+			return nil, err
+		}
+		user := cm.VerifySignedUser(cw.User)
+		return &creds{userid: user.ID, token: cw.Token}, nil
 
+	}
 	cw, err := authremote.GetAuthManagerClient().WhoAmI(ctx, &common.Void{})
 	if err != nil {
 		return nil, err
 	}
 
 	gtr := &auth.GetTokenRequest{DurationSecs: 600}
-	r, err := authremote.GetAuthManagerClient().GetTokenForMe(ctx, gtr)
+	r, err := authremote.GetAuthManagerClient().GetTokenForService(ctx, gtr)
 	if err != nil {
 		return nil, err
 	}
