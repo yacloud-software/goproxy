@@ -23,7 +23,8 @@ import (
 )
 
 var (
-	totalCounter = prometheus.NewCounterVec(
+	answer_all_with_404 = flag.Bool("answer_all_with_404", false, "if true, just answer 404 on all")
+	totalCounter        = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "goproxy_total_requests",
 			Help: "V=1 UNIT=none DESC=incremented each time a request is received",
@@ -140,6 +141,9 @@ func (e *echoServer) streamHTTP(req *h2g.StreamRequest, srv streamer) error {
 	if *singleton {
 		singleton_lock.Lock()
 		defer singleton_lock.Unlock()
+	}
+	if *answer_all_with_404 {
+		return errors.NotFound(srv.Context(), "proxy serves all with 404 atm")
 	}
 	index++
 	sr := SingleRequest{

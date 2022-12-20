@@ -18,21 +18,21 @@ var (
 			Name: "goproxy_testrunner_total_requests",
 			Help: "V=1 UNIT=none DESC=incremented each time a request is received",
 		},
-		[]string{"test"},
+		[]string{"test", "section"},
 	)
 	failCounter = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "goproxy_testrunner_failed_requests",
 			Help: "V=1 UNIT=none DESC=incremented each time a request failed",
 		},
-		[]string{"test"},
+		[]string{"test", "section"},
 	)
 	timsummary = prometheus.NewSummaryVec(
 		prometheus.SummaryOpts{
 			Name: "goproxy_testrunner_req_timing",
 			Help: "V=1 UNIT=s DESC=Summmary for observed requests",
 		},
-		[]string{"test"},
+		[]string{"test", "section"},
 	)
 
 	port      = flag.Int("port", 4100, "The grpc server port")
@@ -64,26 +64,35 @@ func main() {
 }
 func testrunner() {
 	t := time.Duration(2) * time.Second
+
 	for {
 		time.Sleep(t)
 		t = time.Duration(120) * time.Second
-
-		var test testrun
-
-		l := prometheus.Labels{"test": "test1"}
-		totalCounter.With(l).Inc()
-		started := time.Now()
-		test = &testrun1{}
-		err := test.Run()
-		if err != nil {
-			failCounter.With(l).Inc()
-			fmt.Printf("TestRun failed: %s\n", err)
-		} else {
-			timsummary.With(l).Observe(time.Since(started).Seconds())
+		var testruns []testrun
+		testruns = append(testruns, &testrun1{})
+		for _, test := range testruns {
+			for section := 0; section < test.Sections(); section++ {
+				l := prometheus.Labels{"test": "test1", "section": fmt.Sprintf("%d", section)}
+				totalCounter.With(l).Inc()
+				test.Printf("Starting Section %d...\n", section)
+				started := time.Now()
+				err := test.Run(section)
+				dur := time.Since(started).Seconds()
+				if err != nil {
+					failCounter.With(l).Inc()
+					test.Printf("TestRun section %d failed: %s\n", section, err)
+					break
+				} else {
+					test.Printf("section %d completed after %0.2fs\n", section, dur)
+					timsummary.With(l).Observe(dur)
+				}
+			}
 		}
 	}
 }
 
 type testrun interface {
-	Run() error
+	Sections() int
+	Run(section int) error
+	Printf(format string, args ...interface{})
 }
