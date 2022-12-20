@@ -2,15 +2,18 @@ package main
 
 import (
 	"flag"
-	"golang.conradwood.net/go-easyops/linux"
-	"time"
-	// "golang.conradwood.net/go-easyops/utils"
 	"fmt"
+	"golang.conradwood.net/apis/auth"
+	"golang.conradwood.net/apis/common"
+	"golang.conradwood.net/go-easyops/authremote"
+	"golang.conradwood.net/go-easyops/linux"
+	"golang.conradwood.net/go-easyops/utils"
+	"time"
 )
 
 const (
 	gocmd   = "/opt/yacloud/ctools/dev/go/current/go/bin/go"
-	goproxy = "https://goproxy.conradwood.net,direct"
+	goproxy = "https://%s@goproxy.conradwood.net,direct"
 )
 
 var (
@@ -75,8 +78,37 @@ func go_update_all(dir string) error {
 }
 
 func go_env() []string {
+	creds, err := get_auth()
+	if err != nil {
+		fmt.Printf("Error getting auth: %s\n", utils.ErrorString(err))
+		panic("no auth")
+	}
+	authstring := fmt.Sprintf("%s.token:%s", creds.userid, creds.token)
 	res := []string{
-		"GOPROXY=" + goproxy,
+		"GOPROXY=" + fmt.Sprintf(goproxy, authstring),
+		"HOME=/tmp/x",
 	}
 	return res
+}
+
+type creds struct {
+	userid string
+	token  string
+}
+
+func get_auth() (*creds, error) {
+	ctx := authremote.Context()
+
+	cw, err := authremote.GetAuthManagerClient().WhoAmI(ctx, &common.Void{})
+	if err != nil {
+		return nil, err
+	}
+
+	gtr := &auth.GetTokenRequest{DurationSecs: 600}
+	r, err := authremote.GetAuthManagerClient().GetTokenForMe(ctx, gtr)
+	if err != nil {
+		return nil, err
+	}
+	c := &creds{token: r.Token, userid: cw.ID}
+	return c, nil
 }
