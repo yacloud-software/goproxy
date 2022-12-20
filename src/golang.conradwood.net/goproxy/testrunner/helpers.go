@@ -117,6 +117,7 @@ func go_env(c *creds) []string {
 		"GOMODCACHE=" + godir() + "/gomodcache",
 		"GOCACHE=" + godir() + "/gocache",
 		"GO111MODULE=on",
+		"GOFLAGS=-modcacherw",
 		"HOME=/tmp/x",
 	}
 	return res
