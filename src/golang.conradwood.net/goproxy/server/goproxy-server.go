@@ -143,6 +143,7 @@ func (e *echoServer) streamHTTP(req *h2g.StreamRequest, srv streamer) error {
 		defer singleton_lock.Unlock()
 	}
 	if *answer_all_with_404 {
+		fmt.Printf("Returning 404 because of -answer_all_with_404 to %s\n", req.Path)
 		return errors.NotFound(srv.Context(), "proxy serves all with 404 atm")
 	}
 	index++
