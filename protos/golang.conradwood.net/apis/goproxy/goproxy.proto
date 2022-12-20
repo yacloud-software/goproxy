@@ -56,4 +56,6 @@ service GoProxy {
   rpc GetPath(GetPathRequest) returns (stream BinData);
 }
 
-
+// empty service, runs regular test and exposes metric
+service GoProxyTestRunner {
+}
