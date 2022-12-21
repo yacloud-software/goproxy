@@ -29,14 +29,14 @@ var (
 			Name: "goproxy_total_requests",
 			Help: "V=1 UNIT=none DESC=incremented each time a request is received",
 		},
-		[]string{"reqtype"},
+		[]string{"handler", "reqtype"},
 	)
 	failCounter = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "goproxy_failed_requests",
 			Help: "V=1 UNIT=none DESC=incremented each time a request failed",
 		},
-		[]string{"reqtype"},
+		[]string{"handler", "reqtype"},
 	)
 	timsummary = prometheus.NewSummaryVec(
 		prometheus.SummaryOpts{
@@ -61,6 +61,7 @@ type SingleRequest struct {
 	Prefix  string // for printing
 	Started time.Time
 	mi      *pb.ModuleInfo
+	reqtype string
 }
 
 func (sr *SingleRequest) promLabels() prometheus.Labels {
@@ -68,7 +69,7 @@ func (sr *SingleRequest) promLabels() prometheus.Labels {
 	if sr.mi != nil {
 		r = fmt.Sprintf("%v", sr.mi.ModuleType)
 	}
-	l := prometheus.Labels{"reqtype": r}
+	l := prometheus.Labels{"handler": r, "reqtype": sr.reqtype}
 	return l
 }
 func (sr *SingleRequest) Printf(format string, args ...interface{}) {
@@ -169,6 +170,26 @@ func (e *echoServer) streamHTTP(req *h2g.StreamRequest, srv streamer) error {
 	if idx != -1 {
 		find_path = path[:idx]
 	}
+
+	sr.reqtype = ""
+	if strings.HasSuffix(path, "/@v/list") {
+		sr.reqtype = "list"
+	} else if strings.HasSuffix(path, "/@v/latest") {
+		sr.reqtype = "latest"
+	} else if strings.HasSuffix(path, "@latest") {
+		sr.reqtype = "latest"
+	} else if strings.HasSuffix(path, ".info") {
+		sr.reqtype = "info"
+	} else if strings.HasSuffix(path, ".zip") {
+		sr.reqtype = "zip"
+	} else if strings.HasSuffix(path, ".mod") {
+		sr.reqtype = "mod"
+	} else {
+		// must be notfound so that go tries to download alternative paths
+		sendError(srv, 404) //		err = errors.NotFound(ctx, "invalid path \"%s\"", req.Path)
+		return nil
+	}
+
 	handler, err := handlers.HandlerByPath(ctx, find_path)
 	if handler != nil {
 		sr.mi = handler.ModuleInfo()
@@ -215,24 +236,18 @@ func (e *echoServer) streamHTTP(req *h2g.StreamRequest, srv streamer) error {
 		sr.Printf("module serving this path does not exist\n")
 		return errors.NotFound(ctx, "no module \"%s\" found", path)
 	}
-	reqtype := ""
-	if strings.HasSuffix(path, "/@v/list") {
-		reqtype = "list"
+
+	if sr.reqtype == "list" {
 		err = sr.serveList(handler, req, srv)
-	} else if strings.HasSuffix(path, "/@v/latest") {
-		reqtype = "latest"
+	} else if sr.reqtype == "latest" {
 		err = fmt.Errorf("/@v/latest not supported")
-	} else if strings.HasSuffix(path, "@latest") {
-		reqtype = "latest"
+	} else if sr.reqtype == "latest" {
 		err = sr.serveLatest(handler, req, srv)
-	} else if strings.HasSuffix(path, ".info") {
-		reqtype = "info"
+	} else if sr.reqtype == "info" {
 		err = sr.serveInfo(handler, req, srv)
-	} else if strings.HasSuffix(path, ".zip") {
-		reqtype = "zip"
+	} else if sr.reqtype == "zip" {
 		err = sr.serveZip(handler, req, srv)
-	} else if strings.HasSuffix(path, ".mod") {
-		reqtype = "mod"
+	} else if sr.reqtype == "mod" {
 		err = sr.serveMod(handler, req, srv)
 	} else {
 		// must be notfound so that go tries to download alternative paths
@@ -248,7 +263,7 @@ func (e *echoServer) streamHTTP(req *h2g.StreamRequest, srv streamer) error {
 			return err
 		}
 	}
-	req_timing(fmt.Sprintf("%v", mi.ModuleType), reqtype, time.Since(sr.Started))
+	req_timing(fmt.Sprintf("%v", mi.ModuleType), sr.reqtype, time.Since(sr.Started))
 	sr.Printf("Completed in %0.2fs.\n", time.Since(sr.Started).Seconds())
 	return nil
 }
