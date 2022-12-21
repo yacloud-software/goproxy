@@ -7,13 +7,21 @@ import (
 )
 
 type testrun1 struct {
+	name string
+	dir  string
 }
 
+func NewModTestRun(name string, dir string) *testrun1 {
+	return &testrun1{name: name, dir: dir}
+}
+func (t *testrun1) Name() string {
+	return t.name
+}
 func (t *testrun1) Sections() int {
 	return 3
 }
 func (t *testrun1) Run(section int) error {
-	dir, err := utils.FindFile("extra/tests/mod1")
+	dir, err := utils.FindFile("extra/tests/" + t.dir)
 	if err != nil {
 		return err
 	}
@@ -35,5 +43,5 @@ func (t *testrun1) Run(section int) error {
 	return fmt.Errorf("no such section %d", section)
 }
 func (t *testrun1) Printf(format string, args ...interface{}) {
-	fmt.Printf("[testrun1] "+format, args...)
+	fmt.Printf("["+t.Name()+"] "+format, args...)
 }

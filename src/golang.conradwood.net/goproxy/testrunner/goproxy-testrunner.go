@@ -74,7 +74,10 @@ func testrunner() {
 			continue
 		}
 		var testruns []testrun
-		testruns = append(testruns, &testrun1{})
+		testruns = append(testruns, NewModTestRun("test_mod1", "mod1"))
+		testruns = append(testruns, NewModTestRun("test_mod2", "mod2"))
+
+		fmt.Println("-------- starting run ---------\n")
 		for _, test := range testruns {
 			err := utils.RecreateSafely(godir())
 			if err != nil {
@@ -82,9 +85,9 @@ func testrunner() {
 				continue
 			}
 			for section := 0; section < test.Sections(); section++ {
-				l := prometheus.Labels{"test": "test1", "section": fmt.Sprintf("%d", section)}
+				l := prometheus.Labels{"test": test.Name(), "section": fmt.Sprintf("%d", section)}
 				totalCounter.With(l).Inc()
-				test.Printf("Starting Section %d...\n", section)
+				test.Printf("Starting Section %d, test %s...\n", section, test.Name())
 				started := time.Now()
 				err := test.Run(section)
 				dur := time.Since(started).Seconds()
@@ -102,6 +105,7 @@ func testrunner() {
 }
 
 type testrun interface {
+	Name() string
 	Sections() int
 	Run(section int) error
 	Printf(format string, args ...interface{})
