@@ -69,7 +69,12 @@ func (sr *SingleRequest) promLabels() prometheus.Labels {
 	if sr.mi != nil {
 		r = fmt.Sprintf("%v", sr.mi.ModuleType)
 	}
-	l := prometheus.Labels{"handler": r, "reqtype": sr.reqtype}
+	rq := sr.reqtype
+	if rq == "" {
+		rq = "undef"
+	}
+
+	l := prometheus.Labels{"handler": r, "reqtype": rq}
 	return l
 }
 func (sr *SingleRequest) Printf(format string, args ...interface{}) {
