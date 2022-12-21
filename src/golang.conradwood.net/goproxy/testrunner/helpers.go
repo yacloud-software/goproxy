@@ -16,7 +16,7 @@ import (
 const (
 	gocmd = "/opt/yacloud/ctools/dev/go/current/go/bin/go"
 	//	goproxy = "https://%s@l.conradwood.net,direct"
-	goproxy = "https://%s@goproxy.conradwood.net,direct"
+	goproxy = "https://%s@goproxy.conradwood.net"
 )
 
 var (
