@@ -13,7 +13,7 @@ import (
 )
 
 var (
-	enable       = flag.Bool("enable", false, "if false, do not run tests")
+	enable       = flag.Bool("enable", true, "if false, do not run tests")
 	totalCounter = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "goproxy_testrunner_total_requests",
