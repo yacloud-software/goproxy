@@ -236,7 +236,7 @@ func (e *echoServer) streamHTTP(req *h2g.StreamRequest, srv streamer) error {
 		err = sr.serveMod(handler, req, srv)
 	} else {
 		// must be notfound so that go tries to download alternative paths
-		err = errors.NotFound(ctx, "invalid path \"%s\"", req.Path)
+		sendError(srv, 404) //		err = errors.NotFound(ctx, "invalid path \"%s\"", req.Path)
 	}
 	if err != nil {
 		failCounter.With(sr.promLabels()).Inc()

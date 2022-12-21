@@ -137,8 +137,9 @@ func (e *exthandler) GetMod(ctx context.Context, c *cacher.Cache, version string
 	return b, nil
 }
 func (e *exthandler) buildurl(path string) string {
-	return "https://proxy.golang.org/" + path
-	//return "https://" + path
+	//return "https://proxy.golang.org/" + path
+	// return "http://127.0.0.1:8080/" + path
+	return "http://172.29.1.11:14231/" + path // the go-get-proxy from https://github.com/goproxy/goproxy
 }
 func (e *exthandler) CacheEnabled() bool {
 	if !*cache_ext {
