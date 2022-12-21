@@ -239,17 +239,29 @@ func (e *echoServer) streamHTTP(req *h2g.StreamRequest, srv streamer) error {
 		err = errors.NotFound(ctx, "invalid path \"%s\"", req.Path)
 	}
 	if err != nil {
+		failCounter.With(sr.promLabels()).Inc()
 		if errors.ToHTTPCode(err).ErrorCode == 404 {
 			sr.Printf("[from %s] not found: \"%s\"\n", mi.ModuleType, path)
+			sendError(srv, 404)
 		} else {
 			sr.Printf("Error for \"%s\" in %v: %s\n", path, mi.ModuleType, utils.ErrorString(err))
+			return err
 		}
-		failCounter.With(sr.promLabels()).Inc()
-		return err
 	}
 	req_timing(fmt.Sprintf("%v", mi.ModuleType), reqtype, time.Since(sr.Started))
 	sr.Printf("Completed in %0.2fs.\n", time.Since(sr.Started).Seconds())
 	return nil
+}
+func sendError(srv streamer, code uint32) {
+	e := &h2g.StreamDataResponse{
+		Response: &h2g.StreamResponse{
+			StatusCode: code,
+		},
+	}
+	err := srv.Send(e)
+	if err != nil {
+		fmt.Printf("Failed to send error!! (%s)\n", err)
+	}
 }
 func req_timing(modtype, reqtype string, dur time.Duration) {
 	l := prometheus.Labels{"handler": modtype, "reqtype": reqtype}
