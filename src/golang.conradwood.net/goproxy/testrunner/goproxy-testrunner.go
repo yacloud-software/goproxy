@@ -77,7 +77,7 @@ func testrunner() {
 		testruns = append(testruns, NewModTestRun("test_mod1", "mod1"))
 		testruns = append(testruns, NewModTestRun("test_mod2", "mod2"))
 
-		fmt.Println("-------- starting run ---------\n")
+		fmt.Println("-------- starting run ---------")
 		for _, test := range testruns {
 			err := utils.RecreateSafely(godir())
 			if err != nil {

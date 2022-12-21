@@ -5,6 +5,7 @@ go 1.18
 require (
 	github.com/goproxy/goproxy v0.11.0
 	golang.conradwood.net/apis/artefact v1.1.2049
+	golang.conradwood.net/apis/auth v1.1.2051
 	golang.conradwood.net/apis/common v1.1.2049
 	golang.conradwood.net/apis/gitserver v1.1.2049
 	golang.conradwood.net/apis/gomodule v1.1.2049
@@ -27,7 +28,6 @@ require (
 	github.com/prometheus/client_model v0.3.0 // indirect
 	github.com/prometheus/common v0.39.0 // indirect
 	github.com/prometheus/procfs v0.8.0 // indirect
-	golang.conradwood.net/apis/auth v1.1.2051 // indirect
 	golang.conradwood.net/apis/autodeployer v1.1.2049 // indirect
 	golang.conradwood.net/apis/deploymonkey v1.1.2049 // indirect
 	golang.conradwood.net/apis/echoservice v1.1.2049 // indirect
