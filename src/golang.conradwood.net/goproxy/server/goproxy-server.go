@@ -245,8 +245,6 @@ func (e *echoServer) streamHTTP(req *h2g.StreamRequest, srv streamer) error {
 	if sr.reqtype == "list" {
 		err = sr.serveList(handler, req, srv)
 	} else if sr.reqtype == "latest" {
-		err = fmt.Errorf("/@v/latest not supported")
-	} else if sr.reqtype == "latest" {
 		err = sr.serveLatest(handler, req, srv)
 	} else if sr.reqtype == "info" {
 		err = sr.serveInfo(handler, req, srv)
