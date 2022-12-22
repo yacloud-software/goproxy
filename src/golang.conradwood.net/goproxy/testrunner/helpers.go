@@ -22,7 +22,7 @@ const (
 var (
 	prober_user = flag.String("prober_user", "", "username for access")
 	prober_pw   = flag.String("prober_password", "", "password for access")
-	runtime     = flag.Duration("max_runtime", time.Duration(60)*time.Minute, "go stuff runtime")
+	runtime     = flag.Duration("max_runtime", time.Duration(3)*time.Hour, "go stuff runtime")
 	cur_path    string
 )
 

@@ -48,6 +48,7 @@ func main() {
 	var err error
 	flag.Parse()
 	fmt.Printf("Starting GoProxy Testrunner Server...\n")
+	prometheus.SetExpiry(time.Duration(24) * time.Hour)
 	prometheus.MustRegister(timsummary, failCounter, totalCounter)
 	go testrunner()
 	sd := server.NewServerDef()
