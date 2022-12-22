@@ -31,9 +31,16 @@ var (
 	timsummary = prometheus.NewSummaryVec(
 		prometheus.SummaryOpts{
 			Name: "goproxy_testrunner_req_timing",
-			Help: "V=1 UNIT=s DESC=Summmary for observed requests",
+			Help: "V=1 UNIT=s DESC=Summmary for observed sections of tests",
 		},
 		[]string{"test", "section"},
+	)
+	timtotalsummary = prometheus.NewSummaryVec(
+		prometheus.SummaryOpts{
+			Name: "goproxy_testrunner_total_timing",
+			Help: "V=1 UNIT=s DESC=Summmary for observed tests",
+		},
+		[]string{"test", "result"},
 	)
 
 	port      = flag.Int("port", 4100, "The grpc server port")
@@ -49,7 +56,7 @@ func main() {
 	flag.Parse()
 	fmt.Printf("Starting GoProxy Testrunner Server...\n")
 	prometheus.SetExpiry(time.Duration(24) * time.Hour)
-	prometheus.MustRegister(timsummary, failCounter, totalCounter)
+	prometheus.MustRegister(timtotalsummary, timsummary, failCounter, totalCounter)
 	go testrunner()
 	sd := server.NewServerDef()
 	sd.Port = *port
@@ -85,12 +92,13 @@ func testrunner() {
 				fmt.Printf("Failed to recreate godir (%s): %s\n", godir(), err)
 				continue
 			}
+			test_started := time.Now()
 			for section := 0; section < test.Sections(); section++ {
 				l := prometheus.Labels{"test": test.Name(), "section": fmt.Sprintf("%d", section)}
 				totalCounter.With(l).Inc()
 				test.Printf("Starting Section %d, test %s...\n", section, test.Name())
 				started := time.Now()
-				err := test.Run(section)
+				err = test.Run(section)
 				dur := time.Since(started).Seconds()
 				if err != nil {
 					failCounter.With(l).Inc()
@@ -101,6 +109,13 @@ func testrunner() {
 					timsummary.With(l).Observe(dur)
 				}
 			}
+			s := "ok"
+			if err != nil {
+				s = "failed"
+			}
+			l := prometheus.Labels{"test": test.Name(), "result": s}
+			dur := time.Since(test_started).Seconds()
+			timtotalsummary.With(l).Observe(dur)
 		}
 	}
 }
