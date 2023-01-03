@@ -43,6 +43,9 @@ func HandlerByPath(ctx context.Context, path string) (*protoHandler, error) {
 		return nil, err
 	}
 	if !b {
+		if *debug {
+			fmt.Printf("[protos] not a host we serve: %s\n", path)
+		}
 		return nil, nil
 	}
 	pn := &pr.PackageName{PackageName: path}
