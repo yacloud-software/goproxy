@@ -48,7 +48,7 @@ func copy_file(src, dest string) error {
 // compile filename in dir
 func go_compile(dir, filename string) error {
 	l := linux.New()
-	l.SetRuntime(*runtime)
+	l.SetMaxRuntime(time.Duration(*runtime) * time.Second)
 	creds, err := get_auth()
 	if err != nil {
 		return err
@@ -66,7 +66,7 @@ func go_compile(dir, filename string) error {
 // run go mod in dir
 func go_mod_tidy(dir string) error {
 	l := linux.New()
-	l.SetRuntime(*runtime)
+	l.SetMaxRuntime(time.Duration(*runtime) * time.Second)
 	creds, err := get_auth()
 	if err != nil {
 		return err
@@ -84,7 +84,7 @@ func go_mod_tidy(dir string) error {
 // run go mod in dir
 func go_update_all(dir string) error {
 	l := linux.New()
-	l.SetRuntime(*runtime)
+	l.SetMaxRuntime(time.Duration(*runtime) * time.Second)
 	creds, err := get_auth()
 	if err != nil {
 		return err

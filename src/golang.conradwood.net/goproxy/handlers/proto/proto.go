@@ -14,7 +14,6 @@ import (
 	hh "golang.conradwood.net/goproxy/handlerhelpers"
 	"golang.conradwood.net/goproxy/hosts"
 	"io"
-	"strings"
 )
 
 var (
@@ -31,13 +30,15 @@ type protoHandler struct {
 }
 
 func HandlerByPath(ctx context.Context, path string) (*protoHandler, error) {
-	idx := strings.Index(path, "/")
-	if idx == -1 {
-		return nil, nil
-	}
-	if !strings.HasPrefix(path[idx:], "/apis/") {
-		return nil, nil
-	}
+	/*
+		idx := strings.Index(path, "/")
+		if idx == -1 {
+			return nil, nil
+		}
+		if !strings.HasPrefix(path[idx:], "/apis/") {
+			return nil, nil
+		}
+	*/
 	b, err := hosts.IsOneOfUs(ctx, path)
 	if err != nil {
 		return nil, err
@@ -49,7 +50,17 @@ func HandlerByPath(ctx context.Context, path string) (*protoHandler, error) {
 		return nil, nil
 	}
 	pn := &pr.PackageName{PackageName: path}
-	pack, err := pr.GetProtoRendererClient().GetPackageByName(ctx, pn)
+	fr, err := pr.GetProtoRendererClient().FindPackageByName(ctx, pn)
+	if err != nil {
+		return nil, err
+	}
+	if !fr.Exists {
+		if *debug {
+			fmt.Printf("[protos] protorenderer said it is not a proto: %s\n", path)
+		}
+		return nil, nil
+	}
+	pack := fr.Package
 	ph := &protoHandler{pack: pack, path: path}
 	if err != nil {
 		if *debug {
