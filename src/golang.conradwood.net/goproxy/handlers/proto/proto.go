@@ -53,7 +53,7 @@ func HandlerByPath(ctx context.Context, path string) (*protoHandler, error) {
 	ph := &protoHandler{pack: pack, path: path}
 	if err != nil {
 		if *debug {
-			ph.Printf("No proto package for path \"%s\": %s\n", path, err)
+			ph.Printf("error getting proto package for path \"%s\": %s\n", path, err)
 		}
 		// we know user means us (path matches a proto path), but it's wrong
 		return &protoHandler{}, nil
@@ -61,9 +61,15 @@ func HandlerByPath(ctx context.Context, path string) (*protoHandler, error) {
 	}
 	ph.version, err = pr.GetProtoRendererClient().GetVersion(ctx, &common.Void{})
 	if err != nil {
+		if *debug {
+			ph.Printf("error getting proto version for path \"%s\": %s\n", path, err)
+		}
 		return nil, err
 	}
 	ph.modname = path
+	if *debug {
+		ph.Printf("path %s is a valid proto module\n", path)
+	}
 	return ph, nil
 }
 func (ph *protoHandler) ModuleInfo() *pb.ModuleInfo {
