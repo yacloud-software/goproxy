@@ -10,6 +10,7 @@ var (
 	HOSTS = []string{
 		"golang.conradwood.net",
 		"golang.singingcat.net",
+		"userprotos.singingcat.net",
 		"golang.yacloud.eu",
 		"git.conradwood.net",
 		"git.singingcat.net",
