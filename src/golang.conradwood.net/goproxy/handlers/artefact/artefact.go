@@ -231,7 +231,7 @@ func (af *afhandler) GetZip(ctx context.Context, c *cacher.Cache, w io.Writer, v
 	}
 	fi, err := artefact.GetArtefactClient().DoesFileExist(ctx, fr)
 	if err != nil {
-		af.Printf("Failed to check if file exists: %s\n", utils.ErrorString(err))
+		af.Printf("(getzip) Failed to check if file \"%s\" exists: %s\n", fr.Filename, utils.ErrorString(err))
 		return err
 	}
 	if !fi.Exists {
@@ -276,7 +276,7 @@ func (af *afhandler) GetMod(ctx context.Context, c *cacher.Cache, version string
 	}
 	fi, err := artefact.GetArtefactClient().DoesFileExist(ctx, fr)
 	if err != nil {
-		af.Printf("Failed to check if file exists: %s\n", utils.ErrorString(err))
+		af.Printf("(getmod) Failed to check if file \"%s\" exists: %s\n", fr.Filename, utils.ErrorString(err))
 		return nil, err
 	}
 	if !fi.Exists {
