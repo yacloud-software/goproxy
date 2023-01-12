@@ -84,6 +84,8 @@ golang.conradwood.net/go-easyops v0.1.15058 h1:vU+8WQTHrjgw/rgflATZkavQ1yDVRKxor
 golang.conradwood.net/go-easyops v0.1.15058/go.mod h1:GEqo1/IDnnXhRlkGjbH2s/Rh58wmwgR1a2g1jF8tR+w=
 golang.conradwood.net/go-easyops v0.1.15081 h1:gzcYwG+pHxIAOvGESOA2h+aeMN6blD9HZ3VheNqAxQA=
 golang.conradwood.net/go-easyops v0.1.15081/go.mod h1:GEqo1/IDnnXhRlkGjbH2s/Rh58wmwgR1a2g1jF8tR+w=
+golang.conradwood.net/go-easyops v0.1.15228 h1:L7RobVKX5orebR1IUelFk0O0sJeDsAO4/S7KeSm3Jos=
+golang.conradwood.net/go-easyops v0.1.15228/go.mod h1:B3zkniJWe1jLelmHjwNZfBaAFzr+Bqz8gZgHS/ygkmU=
 golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2/go.mod h1:djNgcEr1/C05ACkg1iLfiJU5Ep61QUkGW8qpdssI0+w=
 golang.org/x/crypto v0.0.0-20191011191535-87dc89f01550/go.mod h1:yigFU9vqHzYiE8UmvKecakEJjdnWj3jj499lnFckfCI=
 golang.org/x/mod v0.5.1/go.mod h1:5OXOZSfqPIIbmVBIIKWRFfZjPR0E5r58TLhUjH0a2Ro=
