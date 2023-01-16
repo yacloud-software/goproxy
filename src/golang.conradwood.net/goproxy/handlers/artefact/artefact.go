@@ -262,6 +262,7 @@ func (af *afhandler) GetZip(ctx context.Context, c *cacher.Cache, w io.Writer, v
 
 // get the go.mod (url like .../@v/[version].mod
 func (af *afhandler) GetMod(ctx context.Context, c *cacher.Cache, version string) ([]byte, error) {
+	af.Printf("Getting go.mod for \"%s\"\n", version)
 	if !af.afresolved.PathMatch {
 		return nil, errors.NotFound(ctx, "path not found (incomplete pathmatch)")
 	}
@@ -288,6 +289,7 @@ func (af *afhandler) GetMod(ctx context.Context, c *cacher.Cache, version string
 		af.Printf("failed to get go.mod (%s)\n", utils.ErrorString(err))
 		return nil, err
 	}
+	af.Printf("getting file \"%s\" from artefact server...\n", fr.Filename)
 	var buf bytes.Buffer
 	for {
 		pl, err := stream.Recv()
