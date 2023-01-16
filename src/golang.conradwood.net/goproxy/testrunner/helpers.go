@@ -92,7 +92,7 @@ func go_update_all(dir string) error {
 	l.SetEnvironment(go_env(creds))
 	var com []string
 	com = []string{gocmd, "get", "-u", "all"}
-	com = []string{gocmd, "get", "./", "..."}
+	com = []string{gocmd, "get", "-u", "./..."}
 	out, err := l.SafelyExecuteWithDir(com, dir, nil)
 	if err != nil {
 		fmt.Println(out)
