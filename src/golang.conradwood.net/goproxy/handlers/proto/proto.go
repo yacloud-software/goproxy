@@ -9,7 +9,8 @@ import (
 	gom "golang.conradwood.net/apis/gomodule"
 	pb "golang.conradwood.net/apis/goproxy"
 	pr "golang.conradwood.net/apis/protorenderer"
-	//	"golang.conradwood.net/go-easyops/errors"
+	"golang.conradwood.net/go-easyops/auth"
+	"golang.conradwood.net/go-easyops/errors"
 	"golang.conradwood.net/goproxy/cacher"
 	hh "golang.conradwood.net/goproxy/handlerhelpers"
 	"golang.conradwood.net/goproxy/hosts"
@@ -94,17 +95,31 @@ func (ph *protoHandler) ListVersions(ctx context.Context) ([]*pb.VersionInfo, er
 	if ph.pack == nil {
 		return nil, nil
 	}
+	a_err := ph.checkAccess(ctx)
+	if a_err != nil {
+		return nil, a_err
+	}
 	vi := &pb.VersionInfo{Version: ph.version.Version}
 	return []*pb.VersionInfo{vi}, nil
 }
 
 func (ph *protoHandler) GetLatestVersion(ctx context.Context) (*pb.VersionInfo, error) {
+	a_err := ph.checkAccess(ctx)
+	if a_err != nil {
+		return nil, a_err
+	}
 	vi := &pb.VersionInfo{Version: ph.version.Version}
 	return vi, nil
 }
 
 func (ph *protoHandler) GetZip(ctx context.Context, c *cacher.Cache, w io.Writer, version string) error {
+	a_err := ph.checkAccess(ctx)
+	if a_err != nil {
+		return a_err
+	}
+	u := auth.GetUser(ctx)
 	if *use_gomodule_to_serve {
+		fmt.Printf("Calling gomodule as user %s\n", auth.UserIDString(u))
 		pr := &gom.ProtoRequest{
 			PackageName: ph.path,
 			Version:     version,
@@ -200,6 +215,10 @@ func (ph *protoHandler) GetZip(ctx context.Context, c *cacher.Cache, w io.Writer
 	return nil
 }
 func (ph *protoHandler) GetMod(ctx context.Context, c *cacher.Cache, version string) ([]byte, error) {
+	a_err := ph.checkAccess(ctx)
+	if a_err != nil {
+		return nil, a_err
+	}
 	res := "module " + ph.path
 	buf := []byte(res)
 	if *cache_mod {
@@ -221,4 +240,12 @@ func (ph *protoHandler) Printf(format string, args ...interface{}) {
 	s := "[protohandler] "
 	sn := fmt.Sprintf(format, args...)
 	fmt.Print(s + sn)
+}
+
+func (ph *protoHandler) checkAccess(ctx context.Context) error {
+	u := auth.GetUser(ctx)
+	if u == nil {
+		return errors.Unauthenticated(ctx, "need login for protos")
+	}
+	return nil
 }
