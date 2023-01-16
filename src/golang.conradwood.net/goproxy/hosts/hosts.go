@@ -2,7 +2,7 @@ package hosts
 
 import (
 	"context"
-	"fmt"
+	//	"fmt"
 	"strings"
 )
 
@@ -18,8 +18,9 @@ var (
 	}
 )
 
+// TODO: use ipmanager/or dns lookup mechanism or so sort this out instead of hardcoded list
 func IsOneOfUs(ctx context.Context, path string) (bool, error) {
-	fmt.Printf("Checking path...\"%s\"\n", path)
+	//fmt.Printf("Checking path...\"%s\"\n", path)
 	ho := strings.ToLower(path)
 	for _, h := range HOSTS {
 		if strings.HasPrefix(ho, h) {

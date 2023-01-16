@@ -52,6 +52,7 @@ var (
 	http_port      = flag.Int("http_port", 4108, "The http server port")
 	gopr           *goproxy.Goproxy
 	debug          = flag.Bool("debug", false, "debug mode")
+	verbose        = flag.Bool("verbose", false, "verbose mode")
 	index          int
 )
 
@@ -78,6 +79,9 @@ func (sr *SingleRequest) promLabels() prometheus.Labels {
 	return l
 }
 func (sr *SingleRequest) Printf(format string, args ...interface{}) {
+	if !*verbose {
+		return
+	}
 	mis := ""
 	if sr.mi != nil {
 		mis = fmt.Sprintf("%v ", sr.mi.ModuleType)
