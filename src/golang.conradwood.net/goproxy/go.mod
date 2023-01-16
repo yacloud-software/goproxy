@@ -13,7 +13,7 @@ require (
 	golang.conradwood.net/apis/h2gproxy v1.1.2084
 	golang.conradwood.net/apis/objectstore v1.1.2084
 	golang.conradwood.net/apis/protorenderer v1.1.2080
-	golang.conradwood.net/go-easyops v0.1.15228
+	golang.conradwood.net/go-easyops v0.1.15322
 	google.golang.org/grpc v1.51.0
 )
 
@@ -41,7 +41,7 @@ require (
 	golang.org/x/sys v0.3.0 // indirect
 	golang.org/x/text v0.5.0 // indirect
 	golang.yacloud.eu/apis/urlcacher v1.1.2073 // indirect
-	google.golang.org/genproto v0.0.0-20221207170731-23e4bf6bdc37 // indirect
+	google.golang.org/genproto v0.0.0-20200526211855-cb27e3aa2013 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 )
 
