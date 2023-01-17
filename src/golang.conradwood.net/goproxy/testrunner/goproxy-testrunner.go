@@ -77,7 +77,7 @@ func testrunner() {
 
 	for {
 		time.Sleep(t)
-		t = time.Duration(120) * time.Second
+		t = time.Duration(300) * time.Second
 		if !*enable {
 			continue
 		}
