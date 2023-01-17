@@ -13,6 +13,7 @@ import (
 )
 
 var (
+	delay        = flag.Duration("delay", time.Duration(10)*time.Minute, "delay between tests")
 	enable       = flag.Bool("enable", true, "if false, do not run tests")
 	totalCounter = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
@@ -77,7 +78,7 @@ func testrunner() {
 
 	for {
 		time.Sleep(t)
-		t = time.Duration(300) * time.Second
+		t = *delay
 		if !*enable {
 			continue
 		}
