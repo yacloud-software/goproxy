@@ -17,6 +17,9 @@ func (e *echoServer) GetPath(req *pb.GetPathRequest, srv pb.GoProxy_GetPathServe
 	sr := &h2g.StreamRequest{Path: req.Path}
 	sv := &getpath_streamer{ctx: srv.Context(), srv: srv}
 	err := e.streamHTTP(sr, sv)
+	if err != nil {
+		fmt.Printf("Error %s for path %s\n", err, req.Path)
+	}
 	fmt.Printf("Sent %d bytes for path \"%s\"\n", sv.size, req.Path)
 	return err
 

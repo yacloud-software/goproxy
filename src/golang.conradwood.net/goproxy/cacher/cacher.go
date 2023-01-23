@@ -30,7 +30,9 @@ func NewCacher(ctx context.Context, path, version, suffix string) (*Cache, error
 	c := &Cache{path: path, version: version, suffix: suffix}
 	return c, nil
 }
-
+func (c *Cache) String() string {
+	return fmt.Sprintf("%s,%s,%s", c.path, c.version, c.suffix)
+}
 func (c *Cache) IsAvailable(ctx context.Context) bool {
 	if !*enable {
 		return false

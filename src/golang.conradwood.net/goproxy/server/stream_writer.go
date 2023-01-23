@@ -1,21 +1,27 @@
 package main
 
 import (
+	"bytes"
 	hg "golang.conradwood.net/apis/h2gproxy"
 )
 
 type StreamWriter struct {
 	rec receiver
+	buf *bytes.Buffer
 }
 type receiver interface {
 	Send(*hg.StreamDataResponse) error
 }
 
 func NewStreamWriter(rec receiver) *StreamWriter {
-	res := &StreamWriter{rec: rec}
+	res := &StreamWriter{rec: rec, buf: &bytes.Buffer{}}
 	return res
 }
+func (sw *StreamWriter) Bytes() []byte {
+	return sw.buf.Bytes()
+}
 func (sw *StreamWriter) Write(buf []byte) (int, error) {
+	sw.buf.Write(buf)
 	offset := 0
 	repeat := true
 	for repeat {

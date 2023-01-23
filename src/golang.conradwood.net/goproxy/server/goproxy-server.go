@@ -161,7 +161,7 @@ func (e *echoServer) streamHTTP(req *h2g.StreamRequest, srv streamer) error {
 		Prefix:  fmt.Sprintf("%d", index),
 		Started: time.Now(),
 	}
-	sr.Printf("-------------------\nStarted...\n")
+	sr.Printf("------------------- Started...\n")
 	ctx := srv.Context()
 	u := auth.GetUser(ctx)
 	if u == nil {
@@ -195,6 +195,7 @@ func (e *echoServer) streamHTTP(req *h2g.StreamRequest, srv streamer) error {
 		sr.reqtype = "mod"
 	} else {
 		// must be notfound so that go tries to download alternative paths
+		sr.Printf("Path not found (%s)\n", path)
 		sendError(srv, 404) //		err = errors.NotFound(ctx, "invalid path \"%s\"", req.Path)
 		return nil
 	}
@@ -348,6 +349,8 @@ func (sr *SingleRequest) serveZip(handler handlers.Handler, req *h2g.StreamReque
 			return nc.Get(ctx, func(data []byte) error {
 				return srv.Send(&h2g.StreamDataResponse{Data: data})
 			})
+		} else {
+			sr.Printf("not available in cache (%s)\n", nc)
 		}
 	}
 	sr.Printf("Version: \"%s\"\n", version_string)
@@ -355,6 +358,12 @@ func (sr *SingleRequest) serveZip(handler handlers.Handler, req *h2g.StreamReque
 	err = handler.GetZip(ctx, nc, sw, version_string)
 	if err != nil {
 		return err
+	}
+	if handler.CacheEnabled() {
+		err = nc.PutBytes(ctx, sw.Bytes())
+		if err != nil {
+			fmt.Printf("failed to store in cache %s: %s\n", nc, err)
+		}
 	}
 	return nil
 }
