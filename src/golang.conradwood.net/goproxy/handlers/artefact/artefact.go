@@ -119,6 +119,10 @@ func (af *afhandler) path2artefactid(ctx context.Context, path string) (*afresol
 		afid := &artefact.ArtefactID{ID: 24, Domain: "conradwood.net", Name: "go-easysops"}
 		return &afresolved{afid: afid, PathMatch: false}, path, nil
 	}
+	if strings.Contains(path, "golang.singingcat.net/scgolib") {
+		afid := &artefact.ArtefactID{ID: 193, Domain: "singingcat.net", Name: "scgolib"}
+		return &afresolved{afid: afid, PathMatch: false}, path, nil
+	}
 	af.Printf("Not an artefact: \"%s\"\n", path)
 	return nil, "", nil
 }
