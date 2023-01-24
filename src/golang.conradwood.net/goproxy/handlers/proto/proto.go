@@ -193,26 +193,28 @@ func (ph *protoHandler) GetZip(ctx context.Context, c *cacher.Cache, w io.Writer
 	var curwriter io.Writer
 	for {
 		zf, err := srv.Recv()
+		if zf != nil {
+			//		ph.Printf("Gofile received: %s (%d bytes)\n", zf.Filename, len(zf.Payload))
+			if lastfile != zf.Filename && zf.Filename != "" {
+				lastfile = zf.Filename
+				curwriter, err = zw.Create(hh.Filename2ZipFilename(ph.modname, version, zf.Filename))
+				if err != nil {
+					return err
+				}
+			}
+			if len(zf.Payload) > 0 {
+				_, err = curwriter.Write(zf.Payload)
+				if err != nil {
+					return err
+				}
+			}
+		}
 		if err != nil {
 			ph.Printf("Err:%s\n", err)
 			if err == io.EOF {
 				break
 			}
 			return err
-		}
-		//		ph.Printf("Gofile received: %s (%d bytes)\n", zf.Filename, len(zf.Payload))
-		if lastfile != zf.Filename && zf.Filename != "" {
-			lastfile = zf.Filename
-			curwriter, err = zw.Create(hh.Filename2ZipFilename(ph.modname, version, zf.Filename))
-			if err != nil {
-				return err
-			}
-		}
-		if len(zf.Payload) > 0 {
-			_, err = curwriter.Write(zf.Payload)
-			if err != nil {
-				return err
-			}
 		}
 	}
 	err = zw.Close()
