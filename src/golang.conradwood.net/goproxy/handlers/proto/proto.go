@@ -131,7 +131,7 @@ func (ph *protoHandler) GetZip(ctx context.Context, c *cacher.Cache, w io.Writer
 	}
 	u := auth.GetUser(ctx)
 	if use_go_mod {
-		fmt.Printf("Calling gomodule as user %s\n", auth.UserIDString(u))
+		ph.Printf("Calling gomodule as user %s for version %d\n", auth.UserIDString(u), vid)
 		pr := &gom.ProtoRequest{
 			PackageName: ph.path,
 			Version:     version,
