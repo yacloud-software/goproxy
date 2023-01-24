@@ -11,12 +11,14 @@ import (
 	"golang.conradwood.net/go-easyops/utils"
 	"golang.conradwood.net/goproxy/db"
 	"io"
+	"sync"
 	"time"
 )
 
 var (
-	debug  = flag.Bool("debug_cacher", false, "debug cacher")
-	enable = flag.Bool("cacher_enable", true, "if true cache files")
+	debug   = flag.Bool("debug_cacher", false, "debug cacher")
+	enable  = flag.Bool("cacher_enable", true, "if true cache files")
+	biglock sync.Mutex
 )
 
 type Cache struct {
@@ -69,6 +71,8 @@ func (c *Cache) getDBMatch(ctx context.Context) *pb.CachedModule {
 }
 
 func (c *Cache) PutBytes(ctx context.Context, data []byte) error {
+	biglock.Lock()
+	defer biglock.Unlock()
 	if c.isAvailable(ctx) {
 		return nil
 	}
