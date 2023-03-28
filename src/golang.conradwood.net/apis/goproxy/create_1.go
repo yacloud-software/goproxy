@@ -1,8 +1,15 @@
 // client create: GoProxyClient
+/*
+  Created by /home/cnw/devel/go/go-tools/src/golang.conradwood.net/gotools/protoc-gen-cnw/protoc-gen-cnw.go
+*/
+
 /* geninfo:
    filename  : protos/golang.conradwood.net/apis/goproxy/goproxy.proto
    gopackage : golang.conradwood.net/apis/goproxy
    importname: ai_0
+   clientfunc: GetGoProxy
+   serverfunc: NewGoProxy
+   lookupfunc: GoProxyLookupID
    varname   : client_GoProxyClient_0
    clientname: GoProxyClient
    servername: GoProxyServer
@@ -33,8 +40,9 @@ func GetGoProxyClient() GoProxyClient {
        return client_GoProxyClient_0
     }
 
-    client_GoProxyClient_0 = NewGoProxyClient(client.Connect("goproxy.GoProxy"))
+    client_GoProxyClient_0 = NewGoProxyClient(client.Connect(GoProxyLookupID()))
     lock_GoProxyClient_0.Unlock()
     return client_GoProxyClient_0
 }
 
+func GoProxyLookupID() string { return "goproxy.GoProxy" } // returns the ID suitable for lookup in the registry. treat as opaque, subject to change.

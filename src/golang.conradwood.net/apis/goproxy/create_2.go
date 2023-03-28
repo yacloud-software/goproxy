@@ -1,8 +1,15 @@
 // client create: GoProxyTestRunnerClient
+/*
+  Created by /home/cnw/devel/go/go-tools/src/golang.conradwood.net/gotools/protoc-gen-cnw/protoc-gen-cnw.go
+*/
+
 /* geninfo:
    filename  : protos/golang.conradwood.net/apis/goproxy/goproxy.proto
    gopackage : golang.conradwood.net/apis/goproxy
    importname: ai_1
+   clientfunc: GetGoProxyTestRunner
+   serverfunc: NewGoProxyTestRunner
+   lookupfunc: GoProxyTestRunnerLookupID
    varname   : client_GoProxyTestRunnerClient_1
    clientname: GoProxyTestRunnerClient
    servername: GoProxyTestRunnerServer
@@ -33,8 +40,9 @@ func GetGoProxyTestRunnerClient() GoProxyTestRunnerClient {
        return client_GoProxyTestRunnerClient_1
     }
 
-    client_GoProxyTestRunnerClient_1 = NewGoProxyTestRunnerClient(client.Connect("goproxy.GoProxyTestRunner"))
+    client_GoProxyTestRunnerClient_1 = NewGoProxyTestRunnerClient(client.Connect(GoProxyTestRunnerLookupID()))
     lock_GoProxyTestRunnerClient_1.Unlock()
     return client_GoProxyTestRunnerClient_1
 }
 
+func GoProxyTestRunnerLookupID() string { return "goproxy.GoProxyTestRunner" } // returns the ID suitable for lookup in the registry. treat as opaque, subject to change.
