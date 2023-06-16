@@ -3,25 +3,17 @@ package hosts
 import (
 	"context"
 	//	"fmt"
+	"golang.conradwood.net/goproxy/config"
 	"strings"
 )
 
-var (
-	HOSTS = []string{
-		"golang.conradwood.net",
-		"golang.singingcat.net",
-		"userprotos.singingcat.net",
-		"golang.yacloud.eu",
-		"git.conradwood.net",
-		"git.singingcat.net",
-		"git.yacloud.eu",
-	}
-)
+var ()
 
 // TODO: use ipmanager/or dns lookup mechanism or so sort this out instead of hardcoded list
 func IsOneOfUs(ctx context.Context, path string) (bool, error) {
 	//fmt.Printf("Checking path...\"%s\"\n", path)
 	ho := strings.ToLower(path)
+	HOSTS := config.GetConfig().LocalHosts
 	for _, h := range HOSTS {
 		if strings.HasPrefix(ho, h) {
 			return true, nil

@@ -12,6 +12,7 @@ import (
 	"golang.conradwood.net/go-easyops/errors"
 	"golang.conradwood.net/go-easyops/utils"
 	"golang.conradwood.net/goproxy/cacher"
+	"golang.conradwood.net/goproxy/config"
 	"golang.conradwood.net/goproxy/hosts"
 	"io"
 	"strconv"
@@ -110,19 +111,27 @@ func (af *afhandler) path2artefactid(ctx context.Context, path string) (*afresol
 			return af, path, nil
 		}
 	}
-
-	if path == "golang.conradwood.net/go-easyops" {
-		afid := &artefact.ArtefactID{ID: 24, Domain: "conradwood.net", Name: "go-easysops"}
-		return &afresolved{afid: afid, PathMatch: true}, path, nil
+	for _, ad := range config.GetConfig().ArtefactResolvers {
+		if strings.Contains(path, ad.Path) {
+			afid := &artefact.ArtefactID{ID: ad.ArtefactID, Domain: ad.Domain, Name: ad.Name}
+			return &afresolved{afid: afid, PathMatch: true}, path, nil
+		}
 	}
-	if strings.Contains(path, "golang.conradwood.net/go-easyops") {
-		afid := &artefact.ArtefactID{ID: 24, Domain: "conradwood.net", Name: "go-easysops"}
-		return &afresolved{afid: afid, PathMatch: false}, path, nil
-	}
-	if strings.Contains(path, "golang.singingcat.net/scgolib") {
-		afid := &artefact.ArtefactID{ID: 193, Domain: "singingcat.net", Name: "scgolib"}
-		return &afresolved{afid: afid, PathMatch: false}, path, nil
-	}
+	// below section is now handled by yaml config above
+	/*
+		if path == "golang.conradwood.net/go-easyops" {
+			afid := &artefact.ArtefactID{ID: 24, Domain: "conradwood.net", Name: "go-easysops"}
+			return &afresolved{afid: afid, PathMatch: true}, path, nil
+		}
+		if strings.Contains(path, "golang.conradwood.net/go-easyops") {
+			afid := &artefact.ArtefactID{ID: 24, Domain: "conradwood.net", Name: "go-easysops"}
+			return &afresolved{afid: afid, PathMatch: false}, path, nil
+		}
+		if strings.Contains(path, "golang.singingcat.net/scgolib") {
+			afid := &artefact.ArtefactID{ID: 193, Domain: "singingcat.net", Name: "scgolib"}
+			return &afresolved{afid: afid, PathMatch: false}, path, nil
+		}
+	*/
 	af.Printf("Not an artefact: \"%s\"\n", path)
 	return nil, "", nil
 }

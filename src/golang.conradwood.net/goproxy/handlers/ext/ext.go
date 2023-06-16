@@ -8,6 +8,7 @@ import (
 	"golang.conradwood.net/go-easyops/errors"
 	"golang.conradwood.net/go-easyops/http"
 	"golang.conradwood.net/goproxy/cacher"
+	"golang.conradwood.net/goproxy/config"
 	"io"
 	"strings"
 	"time"
@@ -139,7 +140,10 @@ func (e *exthandler) GetMod(ctx context.Context, c *cacher.Cache, version string
 func (e *exthandler) buildurl(path string) string {
 	//return "https://proxy.golang.org/" + path
 	// return "http://127.0.0.1:8080/" + path
-	return "http://172.29.1.11:14231/" + path // the go-get-proxy from https://github.com/goproxy/goproxy
+	s := config.GetConfig().GoGetProxy
+	s = strings.TrimSuffix(s, "/")
+	return s + "/" + path
+	// return "http://172.29.1.11:14231/" + path // the go-get-proxy from https://github.com/goproxy/goproxy
 }
 func (e *exthandler) CacheEnabled() bool {
 	if !*cache_ext {
