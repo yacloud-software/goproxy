@@ -8,6 +8,13 @@ message Config {
   repeated string LocalHosts=1; // hosts being served locally
   repeated ArtefactDef ArtefactResolvers=2;
   string GoGetProxy=3; // URL of  go-get-proxy from https://github.com/goproxy/goproxy, e.g. http://192.168.0.1:1234
+  repeated UpStreamProxy GoProxies=4; // packages to retrieve from an upstream proxy
+}
+message UpStreamProxy {
+  string Matcher=1; // a go regex, e.g. .*github.*
+  string Proxy=2; // e.g.https://proxy.golang.org
+  string Username=3; // optional
+  string Password=4; // optional
 }
 message ArtefactDef {
   string Path=1; // path to match on
@@ -34,6 +41,7 @@ enum MODULETYPE {
   PROTO=2;
   ARTEFACT=3;
   EXTERNALMODULE=4;
+  UPSTREAMPROXY=5;
 }
 
 message ModuleInfo {
