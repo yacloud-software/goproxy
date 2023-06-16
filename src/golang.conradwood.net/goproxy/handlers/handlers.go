@@ -8,6 +8,7 @@ import (
 	af "golang.conradwood.net/goproxy/handlers/artefact"
 	"golang.conradwood.net/goproxy/handlers/ext"
 	"golang.conradwood.net/goproxy/handlers/proto"
+	"golang.conradwood.net/goproxy/handlers/proxy"
 	"io"
 )
 
@@ -25,11 +26,11 @@ type Handler interface {
 }
 
 // returns a handler or a defaulthandler if it cannot determine which one
-func HandlerByPath(ctx context.Context, path string) (Handler, error) {
+func HandlerByPath(ctx context.Context, normalisedpath, fullpath string) (Handler, error) {
 	var err error
 
 	// check with protorenderer
-	h1, err := proto.HandlerByPath(ctx, path)
+	h1, err := proto.HandlerByPath(ctx, normalisedpath)
 	if err != nil {
 		return nil, err
 	}
@@ -38,7 +39,7 @@ func HandlerByPath(ctx context.Context, path string) (Handler, error) {
 	}
 
 	// check with artefact server
-	h3, err := af.HandlerByPath(ctx, path)
+	h3, err := af.HandlerByPath(ctx, normalisedpath)
 	if err != nil {
 		return nil, err
 	}
@@ -46,8 +47,18 @@ func HandlerByPath(ctx context.Context, path string) (Handler, error) {
 		return h3, nil
 	}
 
+	h4, err := proxy.HandlerByPath(ctx, normalisedpath, fullpath)
+	if err != nil {
+		return nil, err
+	}
+	if h4 != nil {
+		return h4, nil
+	}
+
+	// this one must come last. it accepts almost everything and will
+	// try to use http and git to directly retrieve stuff
 	// check external (probably, most likely if it is not any of the others...)
-	h2, err := ext.HandlerByPath(ctx, path)
+	h2, err := ext.HandlerByPath(ctx, normalisedpath)
 	if err != nil {
 		return nil, err
 	}

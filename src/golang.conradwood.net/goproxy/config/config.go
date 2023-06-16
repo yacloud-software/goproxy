@@ -12,6 +12,15 @@ import (
 
 var (
 	default_config = &pb.Config{
+		GoProxies: []*pb.UpStreamProxy{
+			&pb.UpStreamProxy{
+				//				Matcher:  "this_is_just_informational_and_should_never_match_this_regex",
+				Matcher:  ".*yaml.v2.*",
+				Proxy:    "https://proxy.golang.org",
+				Username: "itsme",
+				Password: "letmein",
+			},
+		},
 		GoGetProxy: "http://172.29.1.11:14231/",
 		LocalHosts: []string{
 			"golang.conradwood.net",
@@ -58,7 +67,7 @@ func load_config() {
 	if config != nil {
 		return
 	}
-	fname := "extras/config.yaml"
+	fname := "extra/config.yaml"
 	b, err := utils.ReadFile(fname)
 	if err == nil {
 		new_config := &pb.Config{}

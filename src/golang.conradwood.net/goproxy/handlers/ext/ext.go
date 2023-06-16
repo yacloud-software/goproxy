@@ -1,5 +1,9 @@
 package ext
 
+/*
+this handles modules that are neither artefact nor proto, basically the "stuff from the net"
+
+*/
 import (
 	"context"
 	"flag"

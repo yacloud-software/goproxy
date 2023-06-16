@@ -23,6 +23,7 @@ import (
 )
 
 var (
+	print_result        = flag.Bool("print_response", false, "if true print goproxy responses (massive logs!")
 	answer_all_with_404 = flag.Bool("answer_all_with_404", false, "if true, just answer 404 on all")
 	totalCounter        = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
@@ -200,10 +201,14 @@ func (e *echoServer) streamHTTP(req *h2g.StreamRequest, srv streamer) error {
 		return nil
 	}
 
-	handler, err := handlers.HandlerByPath(ctx, find_path)
+	handler, err := handlers.HandlerByPath(ctx, find_path, path)
 	if handler != nil {
 		sr.mi = handler.ModuleInfo()
+		if *debug {
+			fmt.Printf("Path \"%s\" handled by %v\n", path, sr.mi.ModuleType)
+		}
 	}
+
 	totalCounter.With(sr.promLabels()).Inc()
 	if err != nil {
 		sr.Printf("failed\n")
@@ -420,7 +425,7 @@ func versionToString(v *pb.VersionInfo) string {
 	return v.VersionName
 }
 func sendBytes(srv streamer, b []byte) error {
-	if *debug {
+	if *print_result {
 		if len(b) < 800 {
 			fmt.Printf("Response:\n")
 			fmt.Printf("%s\n", string(b))
