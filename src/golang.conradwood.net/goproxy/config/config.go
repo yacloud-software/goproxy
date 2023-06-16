@@ -14,8 +14,8 @@ var (
 	default_config = &pb.Config{
 		GoProxies: []*pb.UpStreamProxy{
 			&pb.UpStreamProxy{
-				//				Matcher:  "this_is_just_informational_and_should_never_match_this_regex",
-				Matcher:  ".*yaml.v2.*",
+				Matcher: "this_is_just_informational_and_should_never_match_this_regex",
+				//Matcher:  ".*yaml.v2.*",
 				Proxy:    "https://proxy.golang.org",
 				Username: "itsme",
 				Password: "letmein",
