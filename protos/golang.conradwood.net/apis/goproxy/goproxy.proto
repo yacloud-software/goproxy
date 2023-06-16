@@ -4,7 +4,17 @@ package goproxy;
 option java_package = "net.conradwood.apis.goproxy";
 import "golang.conradwood.net/apis/common/common.proto";
 import "golang.conradwood.net/apis/h2gproxy/h2gproxy.proto";
-
+message Config {
+  repeated string LocalHosts=1; // hosts being served locally
+  repeated ArtefactDef ArtefactResolvers=2;
+  string GoGetProxy=3; // URL of  go-get-proxy from https://github.com/goproxy/goproxy, e.g. http://192.168.0.1:1234
+}
+message ArtefactDef {
+  string Path=1; // path to match on
+  uint64 ArtefactID=2; // artefact to serve
+  string Domain=3;
+  string Name=4;
+}
 message CachedModule {
   uint64 ID=1;
   string Path=2;
