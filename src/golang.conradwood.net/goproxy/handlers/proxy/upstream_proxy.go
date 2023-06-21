@@ -8,6 +8,7 @@ import (
 	"flag"
 	"fmt"
 	pb "golang.conradwood.net/apis/goproxy"
+	"golang.conradwood.net/go-easyops/authremote"
 	"golang.conradwood.net/go-easyops/http"
 	"golang.conradwood.net/goproxy/cacher"
 	"golang.conradwood.net/goproxy/config"
@@ -36,6 +37,10 @@ func HandlerByPath(ctx context.Context, path string, fullpath string) (*upstream
 		if !matches {
 			continue
 		}
+		if *debug_upstream {
+			fmt.Printf("best match is \"%s\" from %s\n", path, gp.Proxy)
+		}
+
 		return &upstream_proxy{matched: gp, path: path, fullpath: fullpath}, nil
 
 	}
@@ -95,9 +100,9 @@ func (up *upstream_proxy) GetMod(ctx context.Context, c *cacher.Cache, version s
 }
 
 func (up *upstream_proxy) download(ctx context.Context, c *cacher.Cache) ([]byte, error) {
-	up.Debugf("getting zip for from %s", up.fullpath)
 	ht := up.getHttp()
 	url := strings.TrimSuffix(up.matched.Proxy, "/") + "/" + up.fullpath
+	up.Debugf("downloading %s", url)
 	hr := ht.Get(url)
 	err := hr.Error()
 	if err != nil {
@@ -116,7 +121,10 @@ func (up *upstream_proxy) download(ctx context.Context, c *cacher.Cache) ([]byte
 	return b, nil
 }
 func (up *upstream_proxy) getHttp() http.HTTPIF {
-	res := http.NewDirectClient()
+	res := http.NewCachingClient(authremote.Context())
+	if up.matched.Username != "" || up.matched.Password != "" {
+		res = http.NewDirectClient()
+	}
 	if up.matched.Username != "" || up.matched.Password != "" {
 		res.SetCreds(up.matched.Username, up.matched.Password)
 	}
