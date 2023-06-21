@@ -71,7 +71,7 @@ func (up *upstream_proxy) GetLatestVersion(ctx context.Context) (*pb.VersionInfo
 		return nil, err
 	}
 	fmt.Printf("Response:\n%s\n", string(b))
-	panic("LatestVersion parser not implemented")
+	return nil, fmt.Errorf("LatestVersion parser not implemented")
 }
 
 // get the zip file for a version
@@ -109,6 +109,9 @@ func (up *upstream_proxy) download(ctx context.Context, c *cacher.Cache) ([]byte
 	up.Debugf("retrieved %s, %d bytes, code=%d", url, len(b), code)
 	if c != nil {
 		c.PutBytes(ctx, b)
+	}
+	if code < 200 || code >= 300 {
+		return nil, fmt.Errorf("%s returned with code %d", url, code)
 	}
 	return b, nil
 }

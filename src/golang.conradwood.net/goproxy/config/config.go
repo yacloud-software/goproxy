@@ -2,6 +2,7 @@ package config
 
 import (
 	"bytes"
+	"flag"
 	"fmt"
 	pb "golang.conradwood.net/apis/goproxy"
 	"golang.conradwood.net/go-easyops/utils"
@@ -11,6 +12,7 @@ import (
 )
 
 var (
+	config_file    = flag.String("config_file", "extra/config.yaml", "optional config file")
 	default_config = &pb.Config{
 		GoProxies: []*pb.UpStreamProxy{
 			&pb.UpStreamProxy{
@@ -67,7 +69,7 @@ func load_config() {
 	if config != nil {
 		return
 	}
-	fname := "extra/config.yaml"
+	fname := *config_file
 	b, err := utils.ReadFile(fname)
 	if err == nil {
 		new_config := &pb.Config{}
