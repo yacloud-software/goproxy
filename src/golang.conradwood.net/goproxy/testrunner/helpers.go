@@ -16,10 +16,10 @@ import (
 const (
 	gocmd = "/opt/yacloud/ctools/dev/go/current/go/bin/go"
 	//	goproxy = "https://%s@l.conradwood.net,direct"
-	goproxy = "https://%s@goproxy.conradwood.net"
 )
 
 var (
+	goproxy     = flag.String("goproxy", "https://%s@goproxy.conradwood.net", "the goproxy to use")
 	prober_user = flag.String("prober_user", "", "username for access")
 	prober_pw   = flag.String("prober_password", "", "password for access")
 	runtime     = flag.Duration("max_runtime", time.Duration(3)*time.Hour, "go stuff runtime")
@@ -106,7 +106,7 @@ func godir() string {
 }
 func go_env(c *creds) []string {
 	authstring := fmt.Sprintf("%s.token:%s", c.userid, c.token)
-	gop := "GOPROXY=" + fmt.Sprintf(goproxy, authstring)
+	gop := "GOPROXY=" + fmt.Sprintf(*goproxy, authstring)
 	if *debug {
 		fmt.Println(gop)
 		fmt.Printf("gostuff = %s\n", godir())
