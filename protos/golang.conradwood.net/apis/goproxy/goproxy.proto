@@ -76,4 +76,6 @@ service GoProxy {
 
 // empty service, runs regular test and exposes metric
 service GoProxyTestRunner {
+  rpc Trigger(common.Void) returns (common.Void);
 }
+
