@@ -1,18 +1,24 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
+	"golang.conradwood.net/apis/common"
 	pb "golang.conradwood.net/apis/goproxy"
+	"golang.conradwood.net/go-easyops/authremote"
 	"golang.conradwood.net/go-easyops/prometheus"
 	"golang.conradwood.net/go-easyops/server"
 	"golang.conradwood.net/go-easyops/utils"
 	"google.golang.org/grpc"
 	"os"
+	"sync"
 	"time"
 )
 
 var (
+	testrunlock  sync.Mutex
+	trigger      = flag.Bool("trigger", false, "if true, don't run,but trigger one in dc")
 	delay        = flag.Duration("delay", time.Duration(10)*time.Minute, "delay between tests")
 	enable       = flag.Bool("enable", true, "if false, do not run tests")
 	totalCounter = prometheus.NewCounterVec(
@@ -55,6 +61,10 @@ type echoServer struct {
 func main() {
 	var err error
 	flag.Parse()
+	if *trigger {
+		Trigger()
+		os.Exit(0)
+	}
 	fmt.Printf("Starting GoProxy Testrunner Server...\n")
 	prometheus.SetExpiry(time.Duration(24) * time.Hour)
 	prometheus.MustRegister(timtotalsummary, timsummary, failCounter, totalCounter)
@@ -82,44 +92,50 @@ func testrunner() {
 		if !*enable {
 			continue
 		}
-		var testruns []testrun
-		testruns = append(testruns, NewModTestRun("test_mod1", "mod1"))
-		testruns = append(testruns, NewModTestRun("test_mod2", "mod2"))
-
-		fmt.Println("-------- starting run ---------")
-		for _, test := range testruns {
-			err := utils.RecreateSafely(godir())
-			if err != nil {
-				fmt.Printf("Failed to recreate godir (%s): %s\n", godir(), err)
-				continue
-			}
-			test_started := time.Now()
-			for section := 0; section < test.Sections(); section++ {
-				l := prometheus.Labels{"test": test.Name(), "section": fmt.Sprintf("%d", section)}
-				totalCounter.With(l).Inc()
-				test.Printf("Starting Section %d, test %s...\n", section, test.Name())
-				started := time.Now()
-				err = test.Run(section)
-				dur := time.Since(started).Seconds()
-				if err != nil {
-					failCounter.With(l).Inc()
-					test.Printf("TestRun section %d failed: %s\n", section, utils.ErrorString(err))
-					break
-				} else {
-					test.Printf("section %d completed after %0.2fs\n", section, dur)
-					timsummary.With(l).Observe(dur)
-				}
-			}
-			s := "ok"
-			if err != nil {
-				s = "failed"
-			}
-			test.Printf("Test completed, result: %s\n", s)
-			l := prometheus.Labels{"test": test.Name(), "result": s}
-			dur := time.Since(test_started).Seconds()
-			timtotalsummary.With(l).Observe(dur)
-		}
+		do_run()
 	}
+}
+func do_run() {
+	testrunlock.Lock()
+	defer testrunlock.Unlock()
+	var testruns []testrun
+	testruns = append(testruns, NewModTestRun("test_mod1", "mod1"))
+	testruns = append(testruns, NewModTestRun("test_mod2", "mod2"))
+
+	fmt.Println("-------- starting run ---------")
+	for _, test := range testruns {
+		err := utils.RecreateSafely(godir())
+		if err != nil {
+			fmt.Printf("Failed to recreate godir (%s): %s\n", godir(), err)
+			continue
+		}
+		test_started := time.Now()
+		for section := 0; section < test.Sections(); section++ {
+			l := prometheus.Labels{"test": test.Name(), "section": fmt.Sprintf("%d", section)}
+			totalCounter.With(l).Inc()
+			test.Printf("Starting Section %d, test %s...\n", section, test.Name())
+			started := time.Now()
+			err = test.Run(section)
+			dur := time.Since(started).Seconds()
+			if err != nil {
+				failCounter.With(l).Inc()
+				test.Printf("TestRun section %d failed: %s\n", section, utils.ErrorString(err))
+				break
+			} else {
+				test.Printf("section %d completed after %0.2fs\n", section, dur)
+				timsummary.With(l).Observe(dur)
+			}
+		}
+		s := "ok"
+		if err != nil {
+			s = "failed"
+		}
+		test.Printf("Test completed, result: %s\n", s)
+		l := prometheus.Labels{"test": test.Name(), "result": s}
+		dur := time.Since(test_started).Seconds()
+		timtotalsummary.With(l).Observe(dur)
+	}
+
 }
 
 type testrun interface {
@@ -127,4 +143,16 @@ type testrun interface {
 	Sections() int
 	Run(section int) error
 	Printf(format string, args ...interface{})
+}
+
+func (e *echoServer) Trigger(ctx context.Context, req *common.Void) (*common.Void, error) {
+	go do_run()
+	return &common.Void{}, nil
+}
+func Trigger() {
+	fmt.Printf("Triggering run...\n")
+	ctx := authremote.Context()
+	_, err := pb.GetGoProxyTestRunnerClient().Trigger(ctx, &common.Void{})
+	utils.Bail("failed to trigger", err)
+	fmt.Printf("Triggered\n")
 }
