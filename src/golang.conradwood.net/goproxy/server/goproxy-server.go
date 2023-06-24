@@ -391,6 +391,7 @@ func (sr *SingleRequest) serveLatest(handler handlers.Handler, req *h2g.StreamRe
 	sr.Printf("Serving latest for \"%s\"\n", req.Path)
 	vi, err := handler.GetLatestVersion(srv.Context())
 	if err != nil {
+		sr.Printf("get latest returned  error: %s\n", err)
 		return err
 	}
 	version_string := versionToString(vi)

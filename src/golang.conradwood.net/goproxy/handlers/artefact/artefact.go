@@ -15,6 +15,7 @@ import (
 	"golang.conradwood.net/goproxy/config"
 	"golang.conradwood.net/goproxy/hosts"
 	"io"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -111,10 +112,11 @@ func (af *afhandler) path2artefactid(ctx context.Context, path string) (*afresol
 			return af, path, nil
 		}
 	}
+	modpath := strings.TrimSuffix(path, "/@latest")
 	for _, ad := range config.GetConfig().ArtefactResolvers {
 		if strings.Contains(path, ad.Path) {
 			afid := &artefact.ArtefactID{ID: ad.ArtefactID, Domain: ad.Domain, Name: ad.Name}
-			return &afresolved{afid: afid, PathMatch: true}, path, nil
+			return &afresolved{afid: afid, PathMatch: true}, modpath, nil
 		}
 	}
 	// below section is now handled by yaml config above
@@ -180,6 +182,7 @@ func (af *afhandler) ModuleInfo() *pb.ModuleInfo {
 }
 
 func (af *afhandler) ListVersions(ctx context.Context) ([]*pb.VersionInfo, error) {
+	af.Printf("Listing versions for \"%s\"\n", af.modpath)
 	if af.cacheentry.versioninfolist != nil {
 		return af.cacheentry.versioninfolist, nil
 	}
@@ -191,6 +194,10 @@ func (af *afhandler) ListVersions(ctx context.Context) ([]*pb.VersionInfo, error
 		af.Printf("unable to get build for artefact: %s\n", err)
 		return nil, err
 	}
+	// important to return *latest* version first!
+	sort.Slice(bl.Builds, func(i, j int) bool {
+		return bl.Builds[i] > bl.Builds[j]
+	})
 	var res []*pb.VersionInfo
 	for _, b := range bl.Builds {
 		dir := MODULEDIR + af.modpath
@@ -201,7 +208,7 @@ func (af *afhandler) ListVersions(ctx context.Context) ([]*pb.VersionInfo, error
 			continue
 		}
 		if !hasmod {
-			af.Printf("Build #%d does not have the required files for modules in \"%s\"", b, dir)
+			af.Printf("Build #%d does not have the required files for modules in \"%s\"\n", b, dir)
 			continue
 		}
 		af.Printf("Build #%d added as module in \"%s\"\n", b, dir)
@@ -215,6 +222,7 @@ func (af *afhandler) ListVersions(ctx context.Context) ([]*pb.VersionInfo, error
 
 // return a versioninfo from a go string (e.g. "v0.120.0")
 func (af *afhandler) GetLatestVersion(ctx context.Context) (*pb.VersionInfo, error) {
+	af.Printf("Getting latest version\n")
 	if !af.afresolved.PathMatch {
 		return nil, errors.NotFound(ctx, "path not found (incomplete pathmatch)")
 	}

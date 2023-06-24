@@ -60,7 +60,7 @@ func (af *afhandler) verify_has_file(ctx context.Context, build, artefactid uint
 		return false, nil
 	}
 	if len(ds.Files) == 0 {
-		af.Printf("Build #%d does not have the required files for modules in \"%s\"", build, dlr.Dir)
+		af.Printf("Build #%d does not have any of the required files for modules in \"%s\"", build, dlr.Dir)
 		return false, nil
 	}
 	af.Printf("Build #%d added as module in \"%s\"\n", build, dlr.Dir)
