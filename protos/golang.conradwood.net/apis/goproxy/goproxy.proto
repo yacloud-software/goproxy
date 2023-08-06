@@ -1,6 +1,7 @@
 syntax = "proto3";
 
 package goproxy;
+option go_package = "golang.conradwood.net/apis/goproxy";
 option java_package = "net.conradwood.apis.goproxy";
 import "golang.conradwood.net/apis/common/common.proto";
 import "golang.conradwood.net/apis/h2gproxy/h2gproxy.proto";
@@ -78,4 +79,3 @@ service GoProxy {
 service GoProxyTestRunner {
   rpc Trigger(common.Void) returns (common.Void);
 }
-
