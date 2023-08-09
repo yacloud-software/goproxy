@@ -112,11 +112,11 @@ func (up *upstream_proxy) download(ctx context.Context, c *cacher.Cache) ([]byte
 	b := hr.Body()
 	code := hr.HTTPCode()
 	up.Debugf("retrieved %s, %d bytes, code=%d", url, len(b), code)
-	if c != nil {
-		c.PutBytes(ctx, b)
-	}
 	if code < 200 || code >= 300 {
 		return nil, fmt.Errorf("%s returned with code %d", url, code)
+	}
+	if c != nil {
+		c.PutBytes(ctx, b)
 	}
 	return b, nil
 }
