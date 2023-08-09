@@ -13,7 +13,7 @@ require (
 	golang.conradwood.net/apis/h2gproxy v1.1.2309
 	golang.conradwood.net/apis/objectstore v1.1.2371
 	golang.conradwood.net/apis/protorenderer v1.1.2309
-	golang.conradwood.net/go-easyops v0.1.18721
+	golang.conradwood.net/go-easyops v0.1.18775
 	google.golang.org/grpc v1.56.2
 	gopkg.in/yaml.v3 v3.0.1
 )
