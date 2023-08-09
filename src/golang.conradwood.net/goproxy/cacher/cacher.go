@@ -93,10 +93,11 @@ func (c *Cache) PutBytes(ctx context.Context, data []byte) error {
 		fmt.Printf("[cacher] ERROR!!!! Put for cachedmodule ID=%d failed: %s\n", cm.ID, utils.ErrorString(err))
 		cm.PutFailed = true
 		cm.PutError = utils.ErrorString(err)
-		db.DefaultDBCachedModule().Update(context.Background(), cm)
-		return err
+	} else {
+		cm.Size = uint64(len(data))
 	}
-	return nil
+	db.DefaultDBCachedModule().Update(context.Background(), cm)
+	return err
 }
 
 func (c *Cache) Debugf(format string, args ...interface{}) {
