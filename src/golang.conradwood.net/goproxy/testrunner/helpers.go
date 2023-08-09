@@ -8,17 +8,17 @@ import (
 	"golang.conradwood.net/go-easyops/authremote"
 	cm "golang.conradwood.net/go-easyops/common"
 	"golang.conradwood.net/go-easyops/linux"
-	//	"golang.conradwood.net/go-easyops/utils"
+	"golang.conradwood.net/go-easyops/utils"
 	"path/filepath"
 	"time"
 )
 
 const (
-	gocmd = "/opt/yacloud/ctools/dev/go/current/go/bin/go"
-	//	goproxy = "https://%s@l.conradwood.net,direct"
+// goproxy = "https://%s@l.conradwood.net,direct"
 )
 
 var (
+	gocmd       = "/opt/yacloud/ctools/dev/go/current/go/bin/go" // overriden in init
 	goproxy     = flag.String("goproxy", "https://%s@goproxy.conradwood.net", "the goproxy to use")
 	prober_user = flag.String("prober_user", "", "username for access")
 	prober_pw   = flag.String("prober_password", "", "password for access")
@@ -28,6 +28,10 @@ var (
 
 func init() {
 	cur_path, _ = filepath.Abs(".")
+	check := "/opt/yacloud/current/ctools/dev/go/current/go/bin/go"
+	if utils.FileExists(check) {
+		gocmd = check
+	}
 }
 
 func copy_file(src, dest string) error {

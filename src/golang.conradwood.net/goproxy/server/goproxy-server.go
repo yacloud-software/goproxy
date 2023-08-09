@@ -128,7 +128,7 @@ func main() {
 func goenv() []string {
 	res := []string{
 		"GOPATH=/tmp/src",
-		"PATH=/opt/yacloud/ctools/dev/bin:/opt/yacloud/ctools/dev/go/current/protoc:/opt/yacloud/ctools/dev/go/current/go/bin:/sbin:/usr/sbin:/bin:/sbin:/usr/sbin:/usr/bin",
+		"PATH=/opt/yacloud/current/ctools/dev/bin:/opt/yacloud/current/ctools/dev/go/current/protoc:/opt/yacloud/current/ctools/dev/go/current/go/bin:/opt/yacloud/ctools/dev/bin:/opt/yacloud/ctools/dev/go/current/protoc:/opt/yacloud/ctools/dev/go/current/go/bin:/sbin:/usr/sbin:/bin:/sbin:/usr/sbin:/usr/bin",
 	}
 	return res
 }
