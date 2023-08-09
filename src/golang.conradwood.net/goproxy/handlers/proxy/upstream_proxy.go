@@ -10,6 +10,7 @@ import (
 	"fmt"
 	pb "golang.conradwood.net/apis/goproxy"
 	"golang.conradwood.net/go-easyops/authremote"
+	"golang.conradwood.net/go-easyops/errors"
 	"golang.conradwood.net/go-easyops/http"
 	"golang.conradwood.net/goproxy/cacher"
 	"golang.conradwood.net/goproxy/config"
@@ -125,6 +126,9 @@ func (up *upstream_proxy) download(ctx context.Context, c *cacher.Cache) ([]byte
 		b = hr.Body()
 		code := hr.HTTPCode()
 		up.Debugf("retrieved %s, %d bytes, code=%d", url, len(b), code)
+		if code == 404 {
+			return nil, errors.NotFound(ctx, "%s returned with code %d", url, code)
+		}
 		if code < 200 || code >= 300 {
 			return nil, fmt.Errorf("%s returned with code %d", url, code)
 		}
