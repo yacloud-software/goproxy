@@ -38,6 +38,7 @@ message CachedModule {
   uint32 LastFailed=11;
   bool PutFailed=12;
   string PutError=13;
+  uint64 Size=14;
 }
 
 message ModuleInfoRequest {
