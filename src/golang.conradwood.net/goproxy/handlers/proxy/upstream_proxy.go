@@ -106,14 +106,15 @@ func (up *upstream_proxy) download(ctx context.Context, c *cacher.Cache) ([]byte
 	var b []byte
 
 	tb := &bytes.Buffer{}
+	var xerr error
 	if c != nil && c.IsAvailable(ctx) {
-		c.Get(ctx, func(b []byte) error {
+		xerr = c.Get(ctx, func(b []byte) error {
 			_, err := tb.Write(b)
 			return err
 		})
 	}
 	b = tb.Bytes()
-	if len(b) == 0 {
+	if xerr != nil || len(b) == 0 {
 		up.Debugf("downloading %s", url)
 		hr := ht.Get(url)
 		err := hr.Error()
