@@ -135,6 +135,7 @@ func do_run() {
 		dur := time.Since(test_started).Seconds()
 		timtotalsummary.With(l).Observe(dur)
 	}
+	fmt.Println("-------- finished run ---------")
 
 }
 
