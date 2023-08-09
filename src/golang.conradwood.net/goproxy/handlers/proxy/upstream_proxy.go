@@ -122,11 +122,14 @@ func (up *upstream_proxy) download(ctx context.Context, c *cacher.Cache) ([]byte
 }
 func (up *upstream_proxy) getHttp() http.HTTPIF {
 	res := http.NewCachingClient(authremote.Context())
-	if up.matched.Username != "" || up.matched.Password != "" {
+	if up.matched.Username != "" || up.matched.Password != "" || up.matched.Token != "" {
 		res = http.NewDirectClient()
 	}
 	if up.matched.Username != "" || up.matched.Password != "" {
 		res.SetCreds(up.matched.Username, up.matched.Password)
+	}
+	if up.matched.Token != "" {
+		res.SetHeader("Authorization", "Bearer "+up.matched.Token)
 	}
 	return res
 }
