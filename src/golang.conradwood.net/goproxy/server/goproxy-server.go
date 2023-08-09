@@ -168,7 +168,7 @@ func (e *echoServer) streamHTTP(req *h2g.StreamRequest, srv streamer) error {
 	if u == nil {
 		sr.Printf("unauthenticated access failure\n")
 		if *debug {
-			fmt.Printf("Unauthenticated access to \"https://%s://%s\"\n", req.Host, req.Path)
+			fmt.Printf("declining nauthenticated access to \"https://%s://%s\"\n", req.Host, req.Path)
 		}
 		return errors.Unauthenticated(ctx, "login required")
 	}
@@ -324,10 +324,7 @@ func (sr *SingleRequest) serveMod(handler handlers.Handler, req *h2g.StreamReque
 	}
 	if handler.CacheEnabled() {
 		if nc.IsAvailable(ctx) {
-			sr.Printf("Serving from cache...\n")
-			return nc.Get(ctx, func(data []byte) error {
-				return srv.Send(&h2g.StreamDataResponse{Data: data})
-			})
+			return sr.serve_from_cache(ctx, nc, srv)
 		}
 	}
 	b, err := handler.GetMod(ctx, nc, version_string)
@@ -350,10 +347,7 @@ func (sr *SingleRequest) serveZip(handler handlers.Handler, req *h2g.StreamReque
 	}
 	if handler.CacheEnabled() {
 		if nc.IsAvailable(ctx) {
-			sr.Printf("Serving from cache...\n")
-			return nc.Get(ctx, func(data []byte) error {
-				return srv.Send(&h2g.StreamDataResponse{Data: data})
-			})
+			return sr.serve_from_cache(ctx, nc, srv)
 		} else {
 			sr.Printf("not available in cache (%s)\n", nc)
 		}
@@ -457,4 +451,24 @@ func sendBytes(srv streamer, b []byte) error {
 		}
 	}
 	return nil
+}
+
+func (sr *SingleRequest) serve_from_cache(ctx context.Context, nc *cacher.Cache, srv streamer) error {
+	key, err := nc.Key(ctx)
+	if err != nil {
+		fmt.Printf("WARNING - no key for cache: %s\n", err)
+	}
+	desc, err := nc.Description(ctx)
+	if err != nil {
+		fmt.Printf("WARNING - no description for cache: %s\n", err)
+	}
+	sr.Printf("Serving from cache (%s) (key=%s)...\n", desc, key)
+	err = nc.Get(ctx, func(data []byte) error {
+		return srv.Send(&h2g.StreamDataResponse{Data: data})
+	})
+	if err != nil {
+		sr.Printf("served from cache returned error: %s\n", utils.ErrorString(err))
+	}
+	return err
+
 }
