@@ -4,6 +4,7 @@ package proxy
 this handler forwards requests to an upstream proxy
 */
 import (
+	"bytes"
 	"context"
 	"flag"
 	"fmt"
@@ -102,18 +103,30 @@ func (up *upstream_proxy) GetMod(ctx context.Context, c *cacher.Cache, version s
 func (up *upstream_proxy) download(ctx context.Context, c *cacher.Cache) ([]byte, error) {
 	ht := up.getHttp()
 	url := strings.TrimSuffix(up.matched.Proxy, "/") + "/" + up.fullpath
-	up.Debugf("downloading %s", url)
-	hr := ht.Get(url)
-	err := hr.Error()
-	if err != nil {
-		up.Debugf("failed to get url %s: %s", url, err)
-		return nil, err
+	var b []byte
+
+	tb := &bytes.Buffer{}
+	if c != nil && c.IsAvailable(ctx) {
+		c.Get(ctx, func(b []byte) error {
+			_, err := tb.Write(b)
+			return err
+		})
 	}
-	b := hr.Body()
-	code := hr.HTTPCode()
-	up.Debugf("retrieved %s, %d bytes, code=%d", url, len(b), code)
-	if code < 200 || code >= 300 {
-		return nil, fmt.Errorf("%s returned with code %d", url, code)
+	b = tb.Bytes()
+	if len(b) == 0 {
+		up.Debugf("downloading %s", url)
+		hr := ht.Get(url)
+		err := hr.Error()
+		if err != nil {
+			up.Debugf("failed to get url %s: %s", url, err)
+			return nil, err
+		}
+		b = hr.Body()
+		code := hr.HTTPCode()
+		up.Debugf("retrieved %s, %d bytes, code=%d", url, len(b), code)
+		if code < 200 || code >= 300 {
+			return nil, fmt.Errorf("%s returned with code %d", url, code)
+		}
 	}
 	if c != nil {
 		c.PutBytes(ctx, b)
