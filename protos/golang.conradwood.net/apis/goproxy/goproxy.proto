@@ -16,6 +16,7 @@ message UpStreamProxy {
   string Proxy=2; // e.g.https://proxy.golang.org
   string Username=3; // optional
   string Password=4; // optional
+  string Token=5; // if upstream uses Authorization-Bearer token style auth
 }
 message ArtefactDef {
   string Path=1; // path to match on
