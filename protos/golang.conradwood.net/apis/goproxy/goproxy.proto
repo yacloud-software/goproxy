@@ -33,6 +33,11 @@ message CachedModule {
   uint32 Created=6;
   uint32 LastUsed=7;
   bool ToBeDeleted=8;
+  uint32 FailingSince=9;
+  uint32 FailCounter=10;
+  uint32 LastFailed=11;
+  bool PutFailed=12;
+  string PutError=13;
 }
 
 message ModuleInfoRequest {
