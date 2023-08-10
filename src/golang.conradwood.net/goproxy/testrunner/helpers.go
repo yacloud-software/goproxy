@@ -95,7 +95,7 @@ func go_update_all(dir string) error {
 	com = []string{gocmd, "get", "-u", "./..."}
 	out, err := l.SafelyExecuteWithDir(com, dir, nil)
 	if err != nil {
-		fmt.Println(out)
+		fmt.Printf("Output:\n%s\n", out)
 		return err
 	}
 	return nil
