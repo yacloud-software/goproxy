@@ -168,7 +168,7 @@ func (e *echoServer) streamHTTP(req *h2g.StreamRequest, srv streamer) error {
 	if u == nil {
 		sr.Printf("unauthenticated access failure\n")
 		if *debug {
-			fmt.Printf("declining nauthenticated access to \"https://%s://%s\"\n", req.Host, req.Path)
+			fmt.Printf("declining unauthenticated access to \"https://%s://%s\"\n", req.Host, req.Path)
 		}
 		return errors.Unauthenticated(ctx, "login required")
 	}
@@ -381,26 +381,57 @@ func (sr *SingleRequest) serveInfo(handler handlers.Handler, req *h2g.StreamRequ
 }
 
 // serve requests suffixed by /@v/latest
+// if handler throws an error, serve from cache (only then, always try to make http request)
 func (sr *SingleRequest) serveLatest(handler handlers.Handler, req *h2g.StreamRequest, srv streamer) error {
 	sr.Printf("Serving latest for \"%s\"\n", req.Path)
+	ctx := srv.Context()
+	nc, err := cacher.NewCacher(ctx, req.Path, "n/a", "latest")
+	if err != nil {
+		return err
+	}
+
 	vi, err := handler.GetLatestVersion(srv.Context())
 	if err != nil {
-		sr.Printf("get latest returned  error: %s\n", err)
+		sr.Printf("Serving latest by handler returned error (%s). Checking cache...\n", err)
+		if nc.IsAvailable(ctx) {
+			return sr.serve_from_cache(ctx, nc, srv)
+		}
 		return err
 	}
 	version_string := versionToString(vi)
 	sr.Printf("Version: \"%s\"\n", version_string)
 	res := fmt.Sprintf(`{"Version":"%s"}`, version_string)
-	return sendBytes(srv, []byte(res))
+
+	b := []byte(res)
+	err = sendBytes(srv, b)
+	if err != nil {
+		return err
+	}
+	err = nc.PutBytes(ctx, b)
+	if err != nil {
+		fmt.Printf("failed to fill cache: %s\n", err)
+	}
+	return nil
 }
 
 // serve requests suffixed by /@v/list
+// if handler throws an error, serve from cache (only then, always try to make http request)
 func (sr *SingleRequest) serveList(handler handlers.Handler, req *h2g.StreamRequest, srv streamer) error {
 	sr.Printf("Serving list for \"%s\" from %v\n", req.Path, handler.ModuleInfo().ModuleType)
 	started := time.Now()
 	ctx := srv.Context()
+
+	nc, err := cacher.NewCacher(ctx, req.Path, "n/a", "list")
+	if err != nil {
+		return err
+	}
+
 	vls, err := handler.ListVersions(ctx)
 	if err != nil {
+		sr.Printf("Serving list by handler returned error (%s). Checking cache...\n", err)
+		if nc.IsAvailable(ctx) {
+			return sr.serve_from_cache(ctx, nc, srv)
+		}
 		return err
 	}
 	sort.Slice(vls, func(i, j int) bool {
@@ -411,7 +442,16 @@ func (sr *SingleRequest) serveList(handler handlers.Handler, req *h2g.StreamRequ
 		res = versionToString(v) + "\n" + res
 	}
 	sr.Printf("Created list for %s in %0.2fs\n", req.Path, time.Since(started).Seconds())
-	return sendBytes(srv, []byte(res))
+	b := []byte(res)
+	err = sendBytes(srv, b)
+	if err != nil {
+		return err
+	}
+	err = nc.PutBytes(ctx, b)
+	if err != nil {
+		fmt.Printf("failed to fill cache: %s\n", err)
+	}
+	return nil
 }
 func versionToString(v *pb.VersionInfo) string {
 	if v.Version != 0 {
