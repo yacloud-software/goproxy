@@ -6,19 +6,19 @@ import (
 	"golang.conradwood.net/apis/auth"
 	"golang.conradwood.net/apis/common"
 	"golang.conradwood.net/go-easyops/authremote"
-	"golang.conradwood.net/go-easyops/cmdline"
 	cm "golang.conradwood.net/go-easyops/common"
 	"golang.conradwood.net/go-easyops/linux"
+	//	"golang.conradwood.net/go-easyops/utils"
 	"path/filepath"
 	"time"
 )
 
 const (
-// goproxy = "https://%s@l.conradwood.net,direct"
+	gocmd = "/opt/yacloud/ctools/dev/go/current/go/bin/go"
+	//	goproxy = "https://%s@l.conradwood.net,direct"
 )
 
 var (
-	gocmd       = cmdline.GetYACloudDir() + "/ctools/dev/go/current/go/bin/go"
 	goproxy     = flag.String("goproxy", "https://%s@goproxy.conradwood.net", "the goproxy to use")
 	prober_user = flag.String("prober_user", "", "username for access")
 	prober_pw   = flag.String("prober_password", "", "password for access")
@@ -48,7 +48,7 @@ func copy_file(src, dest string) error {
 // compile filename in dir
 func go_compile(dir, filename string) error {
 	l := linux.New()
-	l.SetMaxRuntime(*runtime)
+	l.SetMaxRuntime(time.Duration(*runtime) * time.Second)
 	creds, err := get_auth()
 	if err != nil {
 		return err
@@ -66,7 +66,7 @@ func go_compile(dir, filename string) error {
 // run go mod in dir
 func go_mod_tidy(dir string) error {
 	l := linux.New()
-	l.SetMaxRuntime(*runtime)
+	l.SetMaxRuntime(time.Duration(*runtime) * time.Second)
 	creds, err := get_auth()
 	if err != nil {
 		return err
@@ -84,7 +84,7 @@ func go_mod_tidy(dir string) error {
 // run go mod in dir
 func go_update_all(dir string) error {
 	l := linux.New()
-	l.SetMaxRuntime(*runtime)
+	l.SetMaxRuntime(time.Duration(*runtime) * time.Second)
 	creds, err := get_auth()
 	if err != nil {
 		return err
@@ -95,7 +95,7 @@ func go_update_all(dir string) error {
 	com = []string{gocmd, "get", "-u", "./..."}
 	out, err := l.SafelyExecuteWithDir(com, dir, nil)
 	if err != nil {
-		fmt.Printf("Output:\n%s\n", out)
+		fmt.Println(out)
 		return err
 	}
 	return nil

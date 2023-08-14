@@ -30,7 +30,7 @@ func (t *testrun1) Run(section int) error {
 		return err
 	}
 	if section == 0 {
-		t.Printf("Copying go.mod in dir \"%s\", followed by go mod tidy\n", dir)
+		t.Printf("Copying go.mod in dir \"%s\"", dir)
 		err = copy_file(dir+"/go.mod.orig", dir+"/go.mod")
 		if err != nil {
 			return err
