@@ -16,6 +16,7 @@ message UpStreamProxy {
   string Proxy=2; // e.g.https://proxy.golang.org
   string Username=3; // optional
   string Password=4; // optional
+  string Token=5; // if upstream uses Authorization-Bearer token style auth
 }
 message ArtefactDef {
   string Path=1; // path to match on
@@ -32,6 +33,12 @@ message CachedModule {
   uint32 Created=6;
   uint32 LastUsed=7;
   bool ToBeDeleted=8;
+  uint32 FailingSince=9;
+  uint32 FailCounter=10;
+  uint32 LastFailed=11;
+  bool PutFailed=12;
+  string PutError=13;
+  uint64 Size=14;
 }
 
 message ModuleInfoRequest {
@@ -65,7 +72,7 @@ message BinData {
 message Override {
   uint64 ID=1;
   string Package=2;
-  string Version=3;
+  bytes List=3; // if list is requested, this is the list that will be sent verbatim
 }
 /*
  goproxy acts as a gomodule proxy.
@@ -80,6 +87,7 @@ service GoProxy {
   rpc AnalyseURL(ModuleInfoRequest) returns (ModuleInfo);
   // given a path, will download response
   rpc GetPath(GetPathRequest) returns (stream BinData);
+  rpc AddOverride(Override) returns (common.Void);
 }
 
 // empty service, runs regular test and exposes metric
