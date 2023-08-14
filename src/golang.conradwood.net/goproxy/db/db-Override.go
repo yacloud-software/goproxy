@@ -16,16 +16,16 @@ package db
 
 Main Table:
 
- CREATE TABLE override (id integer primary key default nextval('override_seq'),package text not null  ,version text not null  );
+ CREATE TABLE override (id integer primary key default nextval('override_seq'),package text not null  ,list bytea not null  );
 
 Alter statements:
 ALTER TABLE override ADD COLUMN IF NOT EXISTS package text not null default '';
-ALTER TABLE override ADD COLUMN IF NOT EXISTS version text not null default '';
+ALTER TABLE override ADD COLUMN IF NOT EXISTS list bytea not null default 0;
 
 
 Archive Table: (structs can be moved from main to archive using Archive() function)
 
- CREATE TABLE override_archive (id integer unique not null,package text not null,version text not null);
+ CREATE TABLE override_archive (id integer unique not null,package text not null,list bytea not null);
 */
 
 import (
@@ -83,7 +83,7 @@ func (a *DBOverride) Archive(ctx context.Context, id uint64) error {
 	}
 
 	// now save it to archive:
-	_, e := a.DB.ExecContext(ctx, "archive_DBOverride", "insert into "+a.SQLArchivetablename+" (id,package, version) values ($1,$2, $3) ", p.ID, p.Package, p.Version)
+	_, e := a.DB.ExecContext(ctx, "archive_DBOverride", "insert into "+a.SQLArchivetablename+" (id,package, list) values ($1,$2, $3) ", p.ID, p.Package, p.List)
 	if e != nil {
 		return e
 	}
@@ -96,7 +96,7 @@ func (a *DBOverride) Archive(ctx context.Context, id uint64) error {
 // Save (and use database default ID generation)
 func (a *DBOverride) Save(ctx context.Context, p *savepb.Override) (uint64, error) {
 	qn := "DBOverride_Save"
-	rows, e := a.DB.QueryContext(ctx, qn, "insert into "+a.SQLTablename+" (package, version) values ($1, $2) returning id", p.Package, p.Version)
+	rows, e := a.DB.QueryContext(ctx, qn, "insert into "+a.SQLTablename+" (package, list) values ($1, $2) returning id", p.Package, p.List)
 	if e != nil {
 		return 0, a.Error(ctx, qn, e)
 	}
@@ -116,13 +116,13 @@ func (a *DBOverride) Save(ctx context.Context, p *savepb.Override) (uint64, erro
 // Save using the ID specified
 func (a *DBOverride) SaveWithID(ctx context.Context, p *savepb.Override) error {
 	qn := "insert_DBOverride"
-	_, e := a.DB.ExecContext(ctx, qn, "insert into "+a.SQLTablename+" (id,package, version) values ($1,$2, $3) ", p.ID, p.Package, p.Version)
+	_, e := a.DB.ExecContext(ctx, qn, "insert into "+a.SQLTablename+" (id,package, list) values ($1,$2, $3) ", p.ID, p.Package, p.List)
 	return a.Error(ctx, qn, e)
 }
 
 func (a *DBOverride) Update(ctx context.Context, p *savepb.Override) error {
 	qn := "DBOverride_Update"
-	_, e := a.DB.ExecContext(ctx, qn, "update "+a.SQLTablename+" set package=$1, version=$2 where id = $3", p.Package, p.Version, p.ID)
+	_, e := a.DB.ExecContext(ctx, qn, "update "+a.SQLTablename+" set package=$1, list=$2 where id = $3", p.Package, p.List, p.ID)
 
 	return a.Error(ctx, qn, e)
 }
@@ -137,7 +137,7 @@ func (a *DBOverride) DeleteByID(ctx context.Context, p uint64) error {
 // get it by primary id
 func (a *DBOverride) ByID(ctx context.Context, p uint64) (*savepb.Override, error) {
 	qn := "DBOverride_ByID"
-	rows, e := a.DB.QueryContext(ctx, qn, "select id,package, version from "+a.SQLTablename+" where id = $1", p)
+	rows, e := a.DB.QueryContext(ctx, qn, "select id,package, list from "+a.SQLTablename+" where id = $1", p)
 	if e != nil {
 		return nil, a.Error(ctx, qn, fmt.Errorf("ByID: error querying (%s)", e))
 	}
@@ -158,7 +158,7 @@ func (a *DBOverride) ByID(ctx context.Context, p uint64) (*savepb.Override, erro
 // get it by primary id (nil if no such ID row, but no error either)
 func (a *DBOverride) TryByID(ctx context.Context, p uint64) (*savepb.Override, error) {
 	qn := "DBOverride_TryByID"
-	rows, e := a.DB.QueryContext(ctx, qn, "select id,package, version from "+a.SQLTablename+" where id = $1", p)
+	rows, e := a.DB.QueryContext(ctx, qn, "select id,package, list from "+a.SQLTablename+" where id = $1", p)
 	if e != nil {
 		return nil, a.Error(ctx, qn, fmt.Errorf("TryByID: error querying (%s)", e))
 	}
@@ -179,7 +179,7 @@ func (a *DBOverride) TryByID(ctx context.Context, p uint64) (*savepb.Override, e
 // get all rows
 func (a *DBOverride) All(ctx context.Context) ([]*savepb.Override, error) {
 	qn := "DBOverride_all"
-	rows, e := a.DB.QueryContext(ctx, qn, "select id,package, version from "+a.SQLTablename+" order by id")
+	rows, e := a.DB.QueryContext(ctx, qn, "select id,package, list from "+a.SQLTablename+" order by id")
 	if e != nil {
 		return nil, a.Error(ctx, qn, fmt.Errorf("All: error querying (%s)", e))
 	}
@@ -198,7 +198,7 @@ func (a *DBOverride) All(ctx context.Context) ([]*savepb.Override, error) {
 // get all "DBOverride" rows with matching Package
 func (a *DBOverride) ByPackage(ctx context.Context, p string) ([]*savepb.Override, error) {
 	qn := "DBOverride_ByPackage"
-	rows, e := a.DB.QueryContext(ctx, qn, "select id,package, version from "+a.SQLTablename+" where package = $1", p)
+	rows, e := a.DB.QueryContext(ctx, qn, "select id,package, list from "+a.SQLTablename+" where package = $1", p)
 	if e != nil {
 		return nil, a.Error(ctx, qn, fmt.Errorf("ByPackage: error querying (%s)", e))
 	}
@@ -213,7 +213,7 @@ func (a *DBOverride) ByPackage(ctx context.Context, p string) ([]*savepb.Overrid
 // the 'like' lookup
 func (a *DBOverride) ByLikePackage(ctx context.Context, p string) ([]*savepb.Override, error) {
 	qn := "DBOverride_ByLikePackage"
-	rows, e := a.DB.QueryContext(ctx, qn, "select id,package, version from "+a.SQLTablename+" where package ilike $1", p)
+	rows, e := a.DB.QueryContext(ctx, qn, "select id,package, list from "+a.SQLTablename+" where package ilike $1", p)
 	if e != nil {
 		return nil, a.Error(ctx, qn, fmt.Errorf("ByPackage: error querying (%s)", e))
 	}
@@ -225,32 +225,32 @@ func (a *DBOverride) ByLikePackage(ctx context.Context, p string) ([]*savepb.Ove
 	return l, nil
 }
 
-// get all "DBOverride" rows with matching Version
-func (a *DBOverride) ByVersion(ctx context.Context, p string) ([]*savepb.Override, error) {
-	qn := "DBOverride_ByVersion"
-	rows, e := a.DB.QueryContext(ctx, qn, "select id,package, version from "+a.SQLTablename+" where version = $1", p)
+// get all "DBOverride" rows with matching List
+func (a *DBOverride) ByList(ctx context.Context, p []byte) ([]*savepb.Override, error) {
+	qn := "DBOverride_ByList"
+	rows, e := a.DB.QueryContext(ctx, qn, "select id,package, list from "+a.SQLTablename+" where list = $1", p)
 	if e != nil {
-		return nil, a.Error(ctx, qn, fmt.Errorf("ByVersion: error querying (%s)", e))
+		return nil, a.Error(ctx, qn, fmt.Errorf("ByList: error querying (%s)", e))
 	}
 	defer rows.Close()
 	l, e := a.FromRows(ctx, rows)
 	if e != nil {
-		return nil, a.Error(ctx, qn, fmt.Errorf("ByVersion: error scanning (%s)", e))
+		return nil, a.Error(ctx, qn, fmt.Errorf("ByList: error scanning (%s)", e))
 	}
 	return l, nil
 }
 
 // the 'like' lookup
-func (a *DBOverride) ByLikeVersion(ctx context.Context, p string) ([]*savepb.Override, error) {
-	qn := "DBOverride_ByLikeVersion"
-	rows, e := a.DB.QueryContext(ctx, qn, "select id,package, version from "+a.SQLTablename+" where version ilike $1", p)
+func (a *DBOverride) ByLikeList(ctx context.Context, p []byte) ([]*savepb.Override, error) {
+	qn := "DBOverride_ByLikeList"
+	rows, e := a.DB.QueryContext(ctx, qn, "select id,package, list from "+a.SQLTablename+" where list ilike $1", p)
 	if e != nil {
-		return nil, a.Error(ctx, qn, fmt.Errorf("ByVersion: error querying (%s)", e))
+		return nil, a.Error(ctx, qn, fmt.Errorf("ByList: error querying (%s)", e))
 	}
 	defer rows.Close()
 	l, e := a.FromRows(ctx, rows)
 	if e != nil {
-		return nil, a.Error(ctx, qn, fmt.Errorf("ByVersion: error scanning (%s)", e))
+		return nil, a.Error(ctx, qn, fmt.Errorf("ByList: error scanning (%s)", e))
 	}
 	return l, nil
 }
@@ -276,17 +276,17 @@ func (a *DBOverride) Tablename() string {
 }
 
 func (a *DBOverride) SelectCols() string {
-	return "id,package, version"
+	return "id,package, list"
 }
 func (a *DBOverride) SelectColsQualified() string {
-	return "" + a.SQLTablename + ".id," + a.SQLTablename + ".package, " + a.SQLTablename + ".version"
+	return "" + a.SQLTablename + ".id," + a.SQLTablename + ".package, " + a.SQLTablename + ".list"
 }
 
 func (a *DBOverride) FromRows(ctx context.Context, rows *gosql.Rows) ([]*savepb.Override, error) {
 	var res []*savepb.Override
 	for rows.Next() {
 		foo := savepb.Override{}
-		err := rows.Scan(&foo.ID, &foo.Package, &foo.Version)
+		err := rows.Scan(&foo.ID, &foo.Package, &foo.List)
 		if err != nil {
 			return nil, a.Error(ctx, "fromrow-scan", err)
 		}
@@ -301,10 +301,10 @@ func (a *DBOverride) FromRows(ctx context.Context, rows *gosql.Rows) ([]*savepb.
 func (a *DBOverride) CreateTable(ctx context.Context) error {
 	csql := []string{
 		`create sequence if not exists ` + a.SQLTablename + `_seq;`,
-		`CREATE TABLE if not exists ` + a.SQLTablename + ` (id integer primary key default nextval('` + a.SQLTablename + `_seq'),package text not null  ,version text not null  );`,
-		`CREATE TABLE if not exists ` + a.SQLTablename + `_archive (id integer primary key default nextval('` + a.SQLTablename + `_seq'),package text not null  ,version text not null  );`,
+		`CREATE TABLE if not exists ` + a.SQLTablename + ` (id integer primary key default nextval('` + a.SQLTablename + `_seq'),package text not null  ,list bytea not null  );`,
+		`CREATE TABLE if not exists ` + a.SQLTablename + `_archive (id integer primary key default nextval('` + a.SQLTablename + `_seq'),package text not null  ,list bytea not null  );`,
 		`ALTER TABLE override ADD COLUMN IF NOT EXISTS package text not null default '';`,
-		`ALTER TABLE override ADD COLUMN IF NOT EXISTS version text not null default '';`,
+		`ALTER TABLE override ADD COLUMN IF NOT EXISTS list bytea not null default 0;`,
 	}
 	for i, c := range csql {
 		_, e := a.DB.ExecContext(ctx, fmt.Sprintf("create_"+a.SQLTablename+"_%d", i), c)

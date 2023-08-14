@@ -13,12 +13,17 @@ import (
 
 var (
 	echoClient pb.GoProxyClient
+	override   = flag.String("override", "", "`package name to verride")
+	ov_list    = flag.String("override_list", "", "list contents for package to serve")
 	version    = flag.String("version", "", "if set get for that version, otherwise get 'latest'")
 )
 
 func main() {
 	flag.Parse()
-
+	if *override != "" || *ov_list != "" {
+		utils.Bail("failed to override", do_override())
+		os.Exit(0)
+	}
 	echoClient = pb.GetGoProxyClient()
 
 	// a context with authentication
@@ -75,4 +80,33 @@ func get(path string) ([]byte, error) {
 	}
 	bd := buf.Bytes()
 	return bd, nil
+}
+
+func do_override() error {
+	pkg := *override
+	if pkg == "" {
+		return fmt.Errorf("package name required")
+	}
+	var list []byte
+	content := *ov_list
+	if content == "" {
+		return fmt.Errorf("content required")
+	}
+	list = []byte(content)
+	if utils.FileExists(content) {
+		b, err := utils.ReadFile(content)
+		if err != nil {
+			return err
+		}
+		fmt.Printf("Read file \"%s\"\n", content)
+		list = b
+	}
+	ov := &pb.Override{Package: pkg, List: list}
+	ctx := authremote.Context()
+	_, err := pb.GetGoProxyClient().AddOverride(ctx, ov)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("Override for \"%s\" set\n", pkg)
+	return nil
 }

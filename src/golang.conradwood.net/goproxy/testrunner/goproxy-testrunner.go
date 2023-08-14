@@ -130,11 +130,12 @@ func do_run() {
 		if err != nil {
 			s = "failed"
 		}
-		test.Printf("Test completed, result: %s\n", s)
+		test.Printf("Test completed, result: %s <---- *** TEST RESULT *** \n", s)
 		l := prometheus.Labels{"test": test.Name(), "result": s}
 		dur := time.Since(test_started).Seconds()
 		timtotalsummary.With(l).Observe(dur)
 	}
+	fmt.Println("-------- finished run ---------")
 
 }
 
