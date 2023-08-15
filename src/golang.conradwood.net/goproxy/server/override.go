@@ -10,6 +10,9 @@ import (
 )
 
 func (sr *SingleRequest) CheckOverride(ctx context.Context, req *h2g.StreamRequest, srv streamer) (bool, error) {
+	if strings.Contains(req.Host, "goproxy-dev") {
+		return false, nil
+	}
 	p := req.Path
 	p = strings.TrimPrefix(p, "/")
 	p = strings.TrimSuffix(p, "/@v/list")
