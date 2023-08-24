@@ -19,7 +19,7 @@ import (
 var (
 	testrunlock  sync.Mutex
 	trigger      = flag.Bool("trigger", false, "if true, don't run,but trigger one in dc")
-	delay        = flag.Duration("delay", time.Duration(10)*time.Minute, "delay between tests")
+	delay        = flag.Duration("delay", time.Duration(30)*time.Minute, "delay between tests")
 	enable       = flag.Bool("enable", true, "if false, do not run tests")
 	totalCounter = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
