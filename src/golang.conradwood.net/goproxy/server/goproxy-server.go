@@ -447,7 +447,6 @@ func (sr *SingleRequest) serveList(handler handlers.Handler, req *h2g.StreamRequ
 	}
 	b := []byte(res)
 	sr.Printf("Created list for %s in %0.2fs with %d versions (%d bytes)\n", req.Path, time.Since(started).Seconds(), len(vls), len(b))
-	fmt.Printf("Sending version list:\n%s\n=================\n", res)
 	err = sendBytes(srv, b)
 	if err != nil {
 		return err
