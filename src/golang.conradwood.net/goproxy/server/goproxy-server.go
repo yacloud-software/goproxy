@@ -439,14 +439,15 @@ func (sr *SingleRequest) serveList(handler handlers.Handler, req *h2g.StreamRequ
 		return err
 	}
 	sort.Slice(vls, func(i, j int) bool {
-		return vls[i].Version < vls[j].Version
+		return vls[i].Version > vls[j].Version
 	})
 	res := ""
 	for _, v := range vls {
-		res = versionToString(v) + "\n" + res
+		res = res + "\n" + versionToString(v)
 	}
-	sr.Printf("Created list for %s in %0.2fs\n", req.Path, time.Since(started).Seconds())
 	b := []byte(res)
+	sr.Printf("Created list for %s in %0.2fs with %d versions (%d bytes)\n", req.Path, time.Since(started).Seconds(), len(vls), len(b))
+	fmt.Printf("Sending version list:\n%s\n=================\n", res)
 	err = sendBytes(srv, b)
 	if err != nil {
 		return err
