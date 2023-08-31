@@ -1,6 +1,6 @@
 // client create: GoProxyTestRunnerClient
 /*
-  Created by /srv/home/cnw/devel/go/go-tools/src/golang.conradwood.net/gotools/protoc-gen-cnw/protoc-gen-cnw.go
+  Created by /home/cnw/devel/go/yatools/src/golang.yacloud.eu/yatools/protoc-gen-cnw/protoc-gen-cnw.go
 */
 
 /* geninfo:
@@ -13,7 +13,7 @@
    varname   : client_GoProxyTestRunnerClient_1
    clientname: GoProxyTestRunnerClient
    servername: GoProxyTestRunnerServer
-   gscvname  : goproxy.GoProxyTestRunner
+   gsvcname  : goproxy.GoProxyTestRunner
    lockname  : lock_GoProxyTestRunnerClient_1
    activename: active_GoProxyTestRunnerClient_1
 */
@@ -46,3 +46,7 @@ func GetGoProxyTestRunnerClient() GoProxyTestRunnerClient {
 }
 
 func GoProxyTestRunnerLookupID() string { return "goproxy.GoProxyTestRunner" } // returns the ID suitable for lookup in the registry. treat as opaque, subject to change.
+
+func init() {
+   client.RegisterDependency("goproxy.GoProxyTestRunner")
+}

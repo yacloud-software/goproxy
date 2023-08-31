@@ -1,6 +1,6 @@
 // client create: GoProxyClient
 /*
-  Created by /srv/home/cnw/devel/go/go-tools/src/golang.conradwood.net/gotools/protoc-gen-cnw/protoc-gen-cnw.go
+  Created by /home/cnw/devel/go/yatools/src/golang.yacloud.eu/yatools/protoc-gen-cnw/protoc-gen-cnw.go
 */
 
 /* geninfo:
@@ -13,7 +13,7 @@
    varname   : client_GoProxyClient_0
    clientname: GoProxyClient
    servername: GoProxyServer
-   gscvname  : goproxy.GoProxy
+   gsvcname  : goproxy.GoProxy
    lockname  : lock_GoProxyClient_0
    activename: active_GoProxyClient_0
 */
@@ -46,3 +46,7 @@ func GetGoProxyClient() GoProxyClient {
 }
 
 func GoProxyLookupID() string { return "goproxy.GoProxy" } // returns the ID suitable for lookup in the registry. treat as opaque, subject to change.
+
+func init() {
+   client.RegisterDependency("goproxy.GoProxy")
+}
