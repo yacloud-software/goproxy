@@ -6,6 +6,7 @@ this handler forwards requests to an upstream proxy
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
 	pb "golang.conradwood.net/apis/goproxy"
@@ -14,6 +15,7 @@ import (
 	"golang.conradwood.net/go-easyops/http"
 	"golang.conradwood.net/goproxy/cacher"
 	"golang.conradwood.net/goproxy/config"
+	"golang.conradwood.net/goproxy/datatypes"
 	"io"
 	"regexp"
 	"strings"
@@ -77,8 +79,15 @@ func (up *upstream_proxy) GetLatestVersion(ctx context.Context) (*pb.VersionInfo
 	if err != nil {
 		return nil, err
 	}
-	fmt.Printf("Response:\n%s\n", string(b))
-	return nil, fmt.Errorf("LatestVersion parser not implemented")
+	lf := &datatypes.LatestVersion{}
+	err = json.Unmarshal(b, lf)
+	if err != nil {
+		fmt.Printf("Response:\n%s\n", string(b))
+		fmt.Printf("Failed to parse: %s\n", err)
+		return nil, err
+	}
+	vi := &pb.VersionInfo{VersionName: lf.Version}
+	return vi, nil
 }
 
 // get the zip file for a version

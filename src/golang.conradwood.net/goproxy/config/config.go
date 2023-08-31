@@ -11,8 +11,12 @@ import (
 	"time"
 )
 
+const (
+	DEFAULT_CONFIG_FILE = "extra/config.yaml"
+)
+
 var (
-	config_file    = flag.String("config_file", "extra/config.yaml", "optional config file")
+	config_file    = flag.String("config_file", DEFAULT_CONFIG_FILE, "optional config file")
 	default_config = &pb.Config{
 		GoProxies: []*pb.UpStreamProxy{
 			&pb.UpStreamProxy{
@@ -79,6 +83,10 @@ func load_config() {
 		}
 		config = new_config
 		return
+	} else {
+		if fname != DEFAULT_CONFIG_FILE {
+			panic(fmt.Sprintf("failed to read config file (%s): %s", fname, err))
+		}
 	}
 	fmt.Printf("Failed to read config file %s: %s, using default config\n", fname, err)
 	config = default_config
