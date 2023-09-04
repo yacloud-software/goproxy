@@ -10,10 +10,10 @@ require (
 	golang.conradwood.net/apis/gitserver v1.1.2525
 	golang.conradwood.net/apis/gomodule v1.1.2525
 	golang.conradwood.net/apis/goproxy v1.1.1877
-	golang.conradwood.net/apis/h2gproxy v1.1.2525
+	golang.conradwood.net/apis/h2gproxy v1.1.2526
 	golang.conradwood.net/apis/objectstore v1.1.2525
 	golang.conradwood.net/apis/protorenderer v1.1.2525
-	golang.conradwood.net/go-easyops v0.1.19396
+	golang.conradwood.net/go-easyops v0.1.19481
 	google.golang.org/grpc v1.57.0
 	gopkg.in/yaml.v3 v3.0.1
 )
