@@ -6,3 +6,4 @@ the implementation, albeit incomplete, shall solve several issues:
 2. keep a local cache of upstream software, in case upstream software becomes unavailable
 
 3. provide some authorisation workflow if new modules are added in an organisation so that they can be tracked, reviewed and audited when and if necessary
+
