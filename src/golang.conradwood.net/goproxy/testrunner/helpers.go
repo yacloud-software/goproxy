@@ -143,6 +143,11 @@ func get_auth() (*creds, error) {
 			return nil, err
 		}
 		user := cm.VerifySignedUser(cw.User)
+		if user == nil {
+			s := fmt.Sprintf("could not verify user, signature incorrect or something up with auth!")
+			fmt.Println(s)
+			return nil, fmt.Errorf("%s", s)
+		}
 		return &creds{userid: user.ID, token: cw.Token}, nil
 
 	}
