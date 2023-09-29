@@ -357,7 +357,7 @@ func (af *afhandler) Printf(format string, args ...interface{}) {
 	if !*debug {
 		return
 	}
-	s := "[artefacthandler] "
+	s := fmt.Sprintf("[artefacthandler %s] ", af.modpath)
 	sn := fmt.Sprintf(format, args...)
 	fmt.Print(s + sn)
 }
