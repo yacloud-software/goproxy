@@ -228,9 +228,11 @@ func (af *afhandler) GetLatestVersion(ctx context.Context) (*pb.VersionInfo, err
 	}
 	versions, err := af.ListVersions(ctx)
 	if err != nil {
+		af.Printf("listversions failed: %s\n", err)
 		return nil, err
 	}
 	if versions == nil || len(versions) == 0 {
+		af.Printf("listversions return 0 version\n")
 		return nil, errors.NotFound(ctx, "no versioninfo found for %s", af.modpath)
 	}
 	return versions[0], nil
