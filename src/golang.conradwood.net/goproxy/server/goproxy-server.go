@@ -396,7 +396,7 @@ func (sr *SingleRequest) serveLatest(handler handlers.Handler, req *h2g.StreamRe
 
 	vi, err := handler.GetLatestVersion(srv.Context())
 	if err != nil {
-		sr.Printf("Serving latest by handler returned error (%s). Checking cache...\n", err)
+		sr.Printf("Serving latest by handler returned error (%s). Checking cache...\n", utils.ErrorString(err))
 		if nc.IsAvailable(ctx) {
 			return sr.serve_from_cache(ctx, nc, srv)
 		}
