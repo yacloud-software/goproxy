@@ -217,7 +217,6 @@ func (af *afhandler) ListVersions(ctx context.Context) ([]*pb.VersionInfo, error
 	}
 	af.cacheentry.versioninfolist = res
 	return res, nil
-
 }
 
 // return a versioninfo from a go string (e.g. "v0.120.0")
