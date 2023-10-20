@@ -49,4 +49,5 @@ func GoProxyLookupID() string { return "goproxy.GoProxy" } // returns the ID sui
 
 func init() {
    client.RegisterDependency("goproxy.GoProxy")
+   AddService("goproxy.GoProxy")
 }

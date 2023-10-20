@@ -49,4 +49,5 @@ func GoProxyTestRunnerLookupID() string { return "goproxy.GoProxyTestRunner" } /
 
 func init() {
    client.RegisterDependency("goproxy.GoProxyTestRunner")
+   AddService("goproxy.GoProxyTestRunner")
 }
