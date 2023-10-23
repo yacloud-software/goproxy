@@ -108,11 +108,11 @@ func main() {
 			utils.Bail("failed to start http server", err)
 		}()
 		sd := server.NewHTMLServerDef("goproxy.GoProxy")
-		sd.Port = *http_port
+		sd.SetPort(*http_port)
 		server.AddRegistry(sd)
 	*/
 	sd := server.NewServerDef()
-	sd.Port = *port
+	sd.SetPort(*port)
 	sd.Register = server.Register(
 		func(server *grpc.Server) error {
 			e := new(echoServer)
