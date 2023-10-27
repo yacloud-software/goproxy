@@ -146,7 +146,17 @@ type streamer interface {
 }
 
 func (e *echoServer) StreamHTTP(req *h2g.StreamRequest, srv pb.GoProxy_StreamHTTPServer) error {
-	return e.streamHTTP(req, srv)
+	err := e.streamHTTP(req, srv)
+	if err == nil {
+		return nil
+	}
+	u := auth.GetUser(srv.Context())
+	s := "nouser"
+	if u != nil {
+		s = fmt.Sprintf("#%s %s %s (%s)", u.ID, u.FirstName, u.LastName, u.Email)
+	}
+	fmt.Printf("For user \"%s\" and path \"%s\": error %s\n", s, req.Path, err)
+	return err
 }
 func (e *echoServer) streamHTTP(req *h2g.StreamRequest, srv streamer) error {
 	if *singleton {
