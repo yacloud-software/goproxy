@@ -9,6 +9,7 @@ import (
 	"golang.conradwood.net/goproxy/handlers/ext"
 	"golang.conradwood.net/goproxy/handlers/proto"
 	"golang.conradwood.net/goproxy/handlers/proxy"
+	"golang.conradwood.net/goproxy/hosts"
 	"io"
 )
 
@@ -29,8 +30,8 @@ type Handler interface {
 func HandlerByPath(ctx context.Context, normalisedpath, fullpath string) (Handler, error) {
 	var err error
 
-	// check with protorenderer
-	h1, err := proto.HandlerByPath(ctx, normalisedpath)
+	// check with protorenderer and well-known hosts
+	h1, err := proto.HandlerByPath(ctx, normalisedpath, hosts.IsOneOfUs)
 	if err != nil {
 		return nil, err
 	}
@@ -65,8 +66,22 @@ func HandlerByPath(ctx context.Context, normalisedpath, fullpath string) (Handle
 	if h2 != nil {
 		return h2, nil
 	}
+
+	// recheck with protorenderer if that might be available as a proto even if it is not a well-known-host
+	h1, err = proto.HandlerByPath(ctx, normalisedpath, allHosts)
+	if err != nil {
+		return nil, err
+	}
+	if h1 != nil {
+		return h1, nil
+	}
+
 	fmt.Printf("Returning default handler\n")
 	return &defaulthandler{}, nil
+}
+
+func allHosts(ctx context.Context, path string) (bool, error) {
+	return true, nil
 }
 
 type defaulthandler struct {

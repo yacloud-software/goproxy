@@ -13,7 +13,7 @@ import (
 	"golang.conradwood.net/go-easyops/errors"
 	"golang.conradwood.net/goproxy/cacher"
 	hh "golang.conradwood.net/goproxy/handlerhelpers"
-	"golang.conradwood.net/goproxy/hosts"
+	//	"golang.conradwood.net/goproxy/hosts"
 	"io"
 )
 
@@ -30,7 +30,7 @@ type protoHandler struct {
 	modname string
 }
 
-func HandlerByPath(ctx context.Context, path string) (*protoHandler, error) {
+func HandlerByPath(ctx context.Context, path string, isoneofus func(context.Context, string) (bool, error)) (*protoHandler, error) {
 	/*
 		idx := strings.Index(path, "/")
 		if idx == -1 {
@@ -40,7 +40,7 @@ func HandlerByPath(ctx context.Context, path string) (*protoHandler, error) {
 			return nil, nil
 		}
 	*/
-	b, err := hosts.IsOneOfUs(ctx, path)
+	b, err := isoneofus(ctx, path)
 	if err != nil {
 		return nil, err
 	}

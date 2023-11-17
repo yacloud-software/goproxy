@@ -258,7 +258,8 @@ func (e *echoServer) streamHTTP(req *h2g.StreamRequest, srv streamer) error {
 	if mi.ModuleType == pb.MODULETYPE_UNKNOWN {
 		failCounter.With(sr.promLabels()).Inc()
 		sr.Printf("unknown module serving this path\n")
-		return errors.InvalidArgs(ctx, "module \"%s\" resolved to unknown", path)
+		s := fmt.Sprintf("module \"%s\" resolved to unknown", path)
+		return errors.InvalidArgs(ctx, s, s)
 	}
 	if !mi.Exists {
 		failCounter.With(sr.promLabels()).Inc()
