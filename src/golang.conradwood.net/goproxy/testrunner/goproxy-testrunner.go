@@ -71,13 +71,13 @@ func main() {
 	go testrunner()
 	sd := server.NewServerDef()
 	sd.SetPort(*port)
-	sd.Register = server.Register(
+	sd.SetRegister(server.Register(
 		func(server *grpc.Server) error {
 			e := new(echoServer)
 			pb.RegisterGoProxyTestRunnerServer(server, e)
 			return nil
 		},
-	)
+	))
 	err = server.ServerStartup(sd)
 	utils.Bail("Unable to start server", err)
 	os.Exit(0)
@@ -157,3 +157,4 @@ func Trigger() {
 	utils.Bail("failed to trigger", err)
 	fmt.Printf("Triggered\n")
 }
+

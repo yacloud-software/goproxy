@@ -39,3 +39,4 @@ func (sw *StreamWriter) Write(buf []byte) (int, error) {
 	}
 	return len(buf), nil
 }
+

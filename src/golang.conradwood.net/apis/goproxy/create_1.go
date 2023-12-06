@@ -51,3 +51,4 @@ func init() {
    client.RegisterDependency("goproxy.GoProxy")
    AddService("goproxy.GoProxy")
 }
+

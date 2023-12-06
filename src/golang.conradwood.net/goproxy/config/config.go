@@ -103,3 +103,4 @@ func load_config() {
 	fmt.Printf("Default Config:\n%s\n", string(b))
 	return
 }
+

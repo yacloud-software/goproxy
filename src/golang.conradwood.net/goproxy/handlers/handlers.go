@@ -105,3 +105,4 @@ func (d *defaulthandler) GetMod(ctx context.Context, c *cacher.Cache, version st
 func (d *defaulthandler) CacheEnabled() bool {
 	return false
 }
+

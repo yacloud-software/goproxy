@@ -46,3 +46,4 @@ func (t *testrun1) Run(section int) error {
 func (t *testrun1) Printf(format string, args ...interface{}) {
 	fmt.Printf("["+t.Name()+"] "+format, args...)
 }
+

@@ -166,3 +166,4 @@ func (e *exthandler) Printf(format string, args ...interface{}) {
 	sn := fmt.Sprintf(format, args...)
 	fmt.Print(s + sn)
 }
+

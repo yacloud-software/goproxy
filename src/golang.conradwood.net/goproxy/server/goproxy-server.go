@@ -113,13 +113,13 @@ func main() {
 	*/
 	sd := server.NewServerDef()
 	sd.SetPort(*port)
-	sd.Register = server.Register(
+	sd.SetRegister(server.Register(
 		func(server *grpc.Server) error {
 			e := new(echoServer)
 			pb.RegisterGoProxyServer(server, e)
 			return nil
 		},
-	)
+	))
 	err = server.ServerStartup(sd)
 	utils.Bail("Unable to start server", err)
 	os.Exit(0)
@@ -527,3 +527,4 @@ func (sr *SingleRequest) serve_from_cache(ctx context.Context, nc *cacher.Cache,
 	return err
 
 }
+

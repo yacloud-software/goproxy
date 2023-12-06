@@ -362,3 +362,4 @@ func (af *afhandler) Printf(format string, args ...interface{}) {
 	sn := fmt.Sprintf(format, args...)
 	fmt.Print(s + sn)
 }
+
