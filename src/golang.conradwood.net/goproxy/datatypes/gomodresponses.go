@@ -4,3 +4,4 @@ type LatestVersion struct {
 	Version string
 }
 
+

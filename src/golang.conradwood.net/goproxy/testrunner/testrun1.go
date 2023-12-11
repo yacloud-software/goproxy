@@ -47,3 +47,4 @@ func (t *testrun1) Printf(format string, args ...interface{}) {
 	fmt.Printf("["+t.Name()+"] "+format, args...)
 }
 
+
