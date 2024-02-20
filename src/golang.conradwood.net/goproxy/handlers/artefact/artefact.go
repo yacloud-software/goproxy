@@ -87,8 +87,8 @@ func (af *afhandler) url2artefactid(ctx context.Context, url string) (*afresolve
 	nc.afid = afid
 	afidcache.Put(url, nc)
 	return &afresolved{afid: afid, PathMatch: true}, nil
-
 }
+
 func (af *afhandler) path2artefactid(ctx context.Context, path string) (*afresolved, string, error) {
 	af.Printf("resolving \"%s\" as artefact\n", path)
 	// we got to do some messy conversions, e.g. from
@@ -101,16 +101,31 @@ func (af *afhandler) path2artefactid(ctx context.Context, path string) (*afresol
 		gpath = strings.TrimPrefix(ghost[idx:], "/")
 		ghost = strings.TrimPrefix(ghost[:idx], "/")
 	}
-	gu = append(gu, "https://"+ghost+"/git/"+gpath+".git")
-
+	fullpath := "https://" + ghost + "/git/" + gpath + ".git"
+	//	gu = append(gu, fullpath)
+	// now also check the sub-paths
+	for len(strings.Split(fullpath, "/")) > 2 {
+		gu = append(gu, fullpath)
+		gu = append(gu, fullpath+".git")
+		idx := strings.LastIndex(fullpath, "/")
+		if idx == -1 {
+			break
+		}
+		fullpath = fullpath[:idx]
+	}
 	for _, g := range gu {
-		af, err := af.url2artefactid(ctx, g)
+		af.Printf("checking if %s is a repo\n", g)
+		afr, err := af.url2artefactid(ctx, g)
 		if err != nil {
 			return nil, "", err
 		}
-		if af != nil {
-			return af, path, nil
+		if afr == nil {
+			af.Printf("%s is not a repo (%s)\n", g, path)
+			continue
 		}
+		af.Printf("%s is a repo (%s)\n", g, path)
+		return afr, path, nil
+
 	}
 	modpath := strings.TrimSuffix(path, "/@latest")
 	for _, ad := range config.GetConfig().ArtefactResolvers {
@@ -362,8 +377,3 @@ func (af *afhandler) Printf(format string, args ...interface{}) {
 	sn := fmt.Sprintf(format, args...)
 	fmt.Print(s + sn)
 }
-
-
-
-
-
