@@ -5,16 +5,16 @@ go 1.18
 require (
 	github.com/goproxy/goproxy v0.15.1
 	golang.conradwood.net/apis/artefact v1.1.2643
-	golang.conradwood.net/apis/auth v1.1.2855
-	golang.conradwood.net/apis/common v1.1.2855
+	golang.conradwood.net/apis/auth v1.1.2869
+	golang.conradwood.net/apis/common v1.1.2869
 	golang.conradwood.net/apis/gitserver v1.1.2643
 	golang.conradwood.net/apis/gomodule v1.1.2643
 	golang.conradwood.net/apis/goproxy v1.1.1877
 	golang.conradwood.net/apis/h2gproxy v1.1.2643
 	golang.conradwood.net/apis/objectstore v1.1.2643
 	golang.conradwood.net/apis/protorenderer v1.1.2643
-	golang.conradwood.net/go-easyops v0.1.25569
-	google.golang.org/grpc v1.61.0
+	golang.conradwood.net/go-easyops v0.1.25710
+	google.golang.org/grpc v1.62.1
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -22,7 +22,7 @@ require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
-	github.com/golang/protobuf v1.5.3 // indirect
+	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/grafana/pyroscope-go v1.1.1 // indirect
 	github.com/grafana/pyroscope-go/godeltaprof v0.1.6 // indirect
 	github.com/klauspost/compress v1.17.3 // indirect
@@ -37,17 +37,17 @@ require (
 	golang.conradwood.net/apis/echoservice v1.1.2643 // indirect
 	golang.conradwood.net/apis/errorlogger v1.1.2643 // indirect
 	golang.conradwood.net/apis/framework v1.1.2643 // indirect
-	golang.conradwood.net/apis/goeasyops v1.1.2855 // indirect
+	golang.conradwood.net/apis/goeasyops v1.1.2869 // indirect
 	golang.conradwood.net/apis/registry v1.1.2643 // indirect
 	golang.org/x/mod v0.13.0 // indirect
-	golang.org/x/net v0.21.0 // indirect
-	golang.org/x/sys v0.17.0 // indirect
+	golang.org/x/net v0.22.0 // indirect
+	golang.org/x/sys v0.18.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	golang.yacloud.eu/apis/fscache v1.1.2643 // indirect
-	golang.yacloud.eu/apis/session v1.1.2855 // indirect
+	golang.yacloud.eu/apis/session v1.1.2869 // indirect
 	golang.yacloud.eu/apis/urlcacher v1.1.2643 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20231106174013-bbf56f31fb17 // indirect
-	google.golang.org/protobuf v1.32.0 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20240123012728-ef4313101c80 // indirect
+	google.golang.org/protobuf v1.33.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
 
