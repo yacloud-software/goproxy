@@ -10,6 +10,7 @@ import (
 	"golang.conradwood.net/apis/protorenderer"
 	"golang.conradwood.net/go-easyops/auth"
 	"golang.conradwood.net/go-easyops/errors"
+	"golang.conradwood.net/go-easyops/utils"
 	"golang.conradwood.net/goproxy/cacher"
 	hh "golang.conradwood.net/goproxy/handlerhelpers"
 	"golang.yacloud.eu/apis/protomanager"
@@ -163,33 +164,29 @@ func (ph *protoHandler) GetZip(ctx context.Context, c *cacher.Cache, w io.Writer
 			return errors.InvalidArgs(ctx, s, s)
 		}
 	*/
-	pn := &protorenderer.PackageName{PackageName: ph.modname}
-	srv, err := protorenderer.GetProtoRendererClient().GetFilesGoByPackageName(ctx, pn)
-	if err != nil {
-		return err
-	}
 	zw := zip.NewWriter(w)
+	receiver := &changeable_file_receiver{}
+	if *use_protomanager {
+		pn := &protomanager.FilesExtensionRequest{PackageID: ph.package_id}
+		srv, err := protomanager.GetProtoManagerClient().GetFilesForPackageByExtension(ctx, pn)
+		if err != nil {
+			return err
+		}
+		receiver.pm = srv
+	} else {
+		pn := &protorenderer.PackageName{PackageName: ph.modname}
+		srv, err := protorenderer.GetProtoRendererClient().GetFilesGoByPackageName(ctx, pn)
+		if err != nil {
+			return err
+		}
+		receiver.pr = srv
+	}
 
-	/*
-		// now add go.mod
-		modfile, err := ph.GetMod(ctx, version)
-		if err != nil {
-			return err
-		}
-		modwriter, err := zw.Create(hh.Filename2ZipFilename(ph.modname, version, "go.mod"))
-		if err != nil {
-			return err
-		}
-		_, err = modwriter.Write(modfile)
-		if err != nil {
-			return err
-		}
-	*/
 	// now add the files
 	lastfile := ""
 	var curwriter io.Writer
 	for {
-		zf, err := srv.Recv()
+		zf, err := receiver.Recv()
 		if zf != nil {
 			//		ph.Printf("Gofile received: %s (%d bytes)\n", zf.Filename, len(zf.Payload))
 			if lastfile != zf.Filename && zf.Filename != "" {
@@ -199,18 +196,18 @@ func (ph *protoHandler) GetZip(ctx context.Context, c *cacher.Cache, w io.Writer
 					return err
 				}
 			}
-			if len(zf.Payload) > 0 {
-				_, err = curwriter.Write(zf.Payload)
+			if len(zf.Data) > 0 {
+				_, err = curwriter.Write(zf.Data)
 				if err != nil {
 					return err
 				}
 			}
 		}
 		if err != nil {
-			ph.Printf("Err:%s\n", err)
 			if err == io.EOF {
 				break
 			}
+			ph.Printf("receive Err:%s\n", utils.ErrorString(err))
 			return err
 		}
 	}
@@ -256,4 +253,30 @@ func (ph *protoHandler) checkAccess(ctx context.Context) error {
 		return errors.Unauthenticated(ctx, "need login for protos")
 	}
 	return nil
+}
+
+type changeable_file_receiver struct {
+	pm protomanager.ProtoManager_GetFilesForPackageByExtensionClient
+	pr protorenderer.ProtoRendererService_GetFilesGoByPackageNameClient
+}
+type changeable_file_receiver_data struct {
+	Filename string
+	Data     []byte
+}
+
+func (cfr *changeable_file_receiver) Recv() (*changeable_file_receiver_data, error) {
+	var res *changeable_file_receiver_data
+	if cfr.pm == nil {
+		b, err := cfr.pr.Recv()
+		if b != nil {
+			res = &changeable_file_receiver_data{Filename: b.Filename, Data: b.Payload}
+		}
+		return res, err
+	}
+	b, err := cfr.pm.Recv()
+	if b != nil {
+		res = &changeable_file_receiver_data{Filename: b.Filename, Data: b.Data}
+	}
+	return res, err
+
 }

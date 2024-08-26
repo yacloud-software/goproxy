@@ -10,12 +10,12 @@ require (
 	golang.conradwood.net/apis/auth v1.1.3006
 	golang.conradwood.net/apis/common v1.1.3006
 	golang.conradwood.net/apis/gitserver v1.1.3002
-	golang.conradwood.net/apis/gomodule v1.1.3002
 	golang.conradwood.net/apis/goproxy v1.1.1877
 	golang.conradwood.net/apis/h2gproxy v1.1.3006
 	golang.conradwood.net/apis/objectstore v1.1.3006
 	golang.conradwood.net/apis/protorenderer v1.1.3006
 	golang.conradwood.net/go-easyops v0.1.29130
+	golang.yacloud.eu/apis/protomanager v1.1.3006
 	google.golang.org/grpc v1.65.0
 	gopkg.in/yaml.v3 v3.0.1
 )
@@ -49,7 +49,6 @@ require (
 	golang.org/x/text v0.17.0 // indirect
 	golang.yacloud.eu/apis/autodeployer2 v1.1.3002 // indirect
 	golang.yacloud.eu/apis/fscache v1.1.3006 // indirect
-	golang.yacloud.eu/apis/protomanager v1.1.3006 // indirect
 	golang.yacloud.eu/apis/session v1.1.3006 // indirect
 	golang.yacloud.eu/apis/unixipc v1.1.3002 // indirect
 	golang.yacloud.eu/apis/urlcacher v1.1.3002 // indirect
