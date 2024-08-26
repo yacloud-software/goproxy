@@ -167,7 +167,10 @@ func (ph *protoHandler) GetZip(ctx context.Context, c *cacher.Cache, w io.Writer
 	zw := zip.NewWriter(w)
 	receiver := &changeable_file_receiver{}
 	if *use_protomanager {
-		pn := &protomanager.FilesExtensionRequest{PackageID: ph.package_id}
+		pn := &protomanager.FilesExtensionRequest{
+			PackageID:  ph.package_id,
+			Extensions: []string{".go"},
+		}
 		srv, err := protomanager.GetProtoManagerClient().GetFilesForPackageByExtension(ctx, pn)
 		if err != nil {
 			return err
