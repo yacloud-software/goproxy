@@ -94,8 +94,8 @@ func HandlerByPath(ctx context.Context, path string, isoneofus func(context.Cont
 	ph := &protoHandler{package_id: package_id, path: path}
 
 	if *use_protomanager {
-		preq := &protomanager.VersionRequest{Package: path}
-		pid, err := protomanager.GetProtoManagerClient().GetCurrentVersion(ctx, preq)
+		pn := &protomanager.VersionRequest{Package: path}
+		pid, err := protomanager.GetProtoManagerClient().GetCurrentVersion(ctx, pn)
 		if err != nil {
 			return nil, err
 		}
