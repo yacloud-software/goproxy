@@ -5,6 +5,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+
 	"golang.conradwood.net/apis/common"
 	pb "golang.conradwood.net/apis/goproxy"
 	"golang.conradwood.net/apis/protorenderer"
@@ -14,6 +15,7 @@ import (
 	"golang.conradwood.net/goproxy/cacher"
 	hh "golang.conradwood.net/goproxy/handlerhelpers"
 	"golang.yacloud.eu/apis/protomanager"
+
 	//	"golang.conradwood.net/goproxy/hosts"
 	"io"
 )
@@ -55,7 +57,7 @@ func HandlerByPath(ctx context.Context, path string, isoneofus func(context.Cont
 	}
 	package_id := ""
 	if *use_protomanager {
-		pn := &protomanager.PackagesByNameRequest{Name: path}
+		pn := &protomanager.PackagesByNameRequest{Name: path, ExactMatchOnly: true}
 		pnl, err := protomanager.GetProtoManagerClient().FindPackagesByName(ctx, pn)
 		if err != nil {
 			return nil, err
@@ -68,14 +70,17 @@ func HandlerByPath(ctx context.Context, path string, isoneofus func(context.Cont
 		}
 		if len(pnl.Packages) > 1 {
 			if *debug {
-				fmt.Printf("[protos] protomanager found %d packages for proto: %s\n", len(pnl.Packages), path)
+				fmt.Printf("[protos] rejecting, because protomanager.FindPackagesByName() found more than 1 (%d) packages for proto: %s\n", len(pnl.Packages), path)
 				for _, p := range pnl.Packages {
-					fmt.Printf("[protos] protomanager found: %s\n", p.Name)
+					fmt.Printf("[protos] protomanager found: \"%s\"\n", p.Name)
 				}
 			}
 			return nil, nil
 		}
 		package_id = pnl.Packages[0].ID
+		if *debug {
+			fmt.Printf("[protos] path %s == protomanager package #%s\n", path, package_id)
+		}
 	} else {
 		pn := &protorenderer.PackageName{PackageName: path}
 		fr, err := protorenderer.GetProtoRendererClient().FindPackageByName(ctx, pn)
@@ -107,7 +112,7 @@ func HandlerByPath(ctx context.Context, path string, isoneofus func(context.Cont
 		}
 		ph.version = pid.Version
 	}
-
+	fmt.Printf("[protos] path %s == package #%s, Version %d\n", path, package_id, ph.version)
 	ph.modname = path
 	if *debug {
 		ph.Printf("path %s is a valid proto module\n", path)

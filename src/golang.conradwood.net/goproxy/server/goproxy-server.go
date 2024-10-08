@@ -4,6 +4,12 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"os"
+	"sort"
+	"strings"
+	"sync"
+	"time"
+
 	"github.com/goproxy/goproxy"
 	pb "golang.conradwood.net/apis/goproxy"
 	h2g "golang.conradwood.net/apis/h2gproxy"
@@ -15,11 +21,6 @@ import (
 	"golang.conradwood.net/goproxy/cacher"
 	"golang.conradwood.net/goproxy/handlers"
 	"google.golang.org/grpc"
-	"os"
-	"sort"
-	"strings"
-	"sync"
-	"time"
 )
 
 var (
@@ -192,6 +193,9 @@ func (e *echoServer) streamHTTP(req *h2g.StreamRequest, srv streamer) error {
 	}
 	b, err := sr.CheckOverride(ctx, req, srv)
 	if b {
+		if *debug {
+			sr.Printf("check for override failed: %s\n", errors.ErrorString(err))
+		}
 		return err
 	}
 
@@ -225,7 +229,7 @@ func (e *echoServer) streamHTTP(req *h2g.StreamRequest, srv streamer) error {
 
 	totalCounter.With(sr.promLabels()).Inc()
 	if err != nil {
-		sr.Printf("failed\n")
+		sr.Printf("checking for handler failed: %s\n", errors.ErrorStringWithStackTrace(err))
 		failCounter.With(sr.promLabels()).Inc()
 		return err
 	}
@@ -240,6 +244,7 @@ func (e *echoServer) streamHTTP(req *h2g.StreamRequest, srv streamer) error {
 		failCounter.With(sr.promLabels()).Inc()
 		return err
 	}
+	sr.Printf("handler for path \"%s\" found\n", path)
 	if *debug {
 		print := false
 		if mi.ModuleType == pb.MODULETYPE_PROTO {
@@ -527,8 +532,3 @@ func (sr *SingleRequest) serve_from_cache(ctx context.Context, nc *cacher.Cache,
 	return err
 
 }
-
-
-
-
-
