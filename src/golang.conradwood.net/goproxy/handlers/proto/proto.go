@@ -171,6 +171,8 @@ func (ph *protoHandler) GetZip(ctx context.Context, c *cacher.Cache, w io.Writer
 		}
 	*/
 	zw := zip.NewWriter(w)
+	total_bytes := 0
+	total_files := 0
 	receiver := &changeable_file_receiver{}
 	if *use_protomanager {
 		pn := &protomanager.FilesExtensionRequest{
@@ -200,12 +202,14 @@ func (ph *protoHandler) GetZip(ctx context.Context, c *cacher.Cache, w io.Writer
 			//		ph.Printf("Gofile received: %s (%d bytes)\n", zf.Filename, len(zf.Payload))
 			if lastfile != zf.Filename && zf.Filename != "" {
 				lastfile = zf.Filename
+				total_files++
 				curwriter, err = zw.Create(hh.Filename2ZipFilename(ph.modname, version, zf.Filename))
 				if err != nil {
 					return err
 				}
 			}
 			if len(zf.Data) > 0 {
+				total_bytes = total_bytes + len(zf.Data)
 				_, err = curwriter.Write(zf.Data)
 				if err != nil {
 					return err
@@ -223,6 +227,12 @@ func (ph *protoHandler) GetZip(ctx context.Context, c *cacher.Cache, w io.Writer
 	err = zw.Close()
 	if err != nil {
 		return err
+	}
+	if total_files == 0 {
+		return errors.Errorf("no files available for %s", ph.modname)
+	}
+	if total_bytes == 0 {
+		return errors.Errorf("%d files in module %s but none had any content", total_files, ph.modname)
 	}
 
 	return nil
