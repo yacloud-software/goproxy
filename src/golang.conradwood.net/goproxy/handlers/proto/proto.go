@@ -224,15 +224,23 @@ func (ph *protoHandler) GetZip(ctx context.Context, c *cacher.Cache, w io.Writer
 			return err
 		}
 	}
-	err = zw.Close()
-	if err != nil {
-		return err
-	}
 	if total_files == 0 {
 		return errors.Errorf("no files available for %s", ph.modname)
 	}
 	if total_bytes == 0 {
 		return errors.Errorf("%d files in module %s but none had any content", total_files, ph.modname)
+	}
+
+	/* closing zip file at the end.
+	any previous errors will result in an incomplete zip file.
+	important, because once the first byte was sent to the client,
+	the http code will be 200. subsequent errors cannot be indicated
+	in http, but an incomplete zip file will hopefully deter
+	"go get" to cache it
+	*/
+	err = zw.Close()
+	if err != nil {
+		return err
 	}
 
 	return nil
