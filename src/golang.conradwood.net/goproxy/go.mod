@@ -5,13 +5,13 @@ go 1.22.2
 require (
 	github.com/goproxy/goproxy v0.18.2
 	golang.conradwood.net/apis/artefact v1.1.3630
-	golang.conradwood.net/apis/auth v1.1.3647
-	golang.conradwood.net/apis/common v1.1.3647
+	golang.conradwood.net/apis/auth v1.1.3682
+	golang.conradwood.net/apis/common v1.1.3682
 	golang.conradwood.net/apis/gitserver v1.1.3630
 	golang.conradwood.net/apis/goproxy v1.1.1877
 	golang.conradwood.net/apis/h2gproxy v1.1.3630
 	golang.conradwood.net/apis/objectstore v1.1.3630
-	golang.conradwood.net/go-easyops v0.1.34140
+	golang.conradwood.net/go-easyops v0.1.34261
 	golang.yacloud.eu/apis/protomanager v1.1.3630
 	google.golang.org/grpc v1.70.0
 	gopkg.in/yaml.v3 v3.0.1
@@ -37,7 +37,7 @@ require (
 	golang.conradwood.net/apis/errorlogger v1.1.3630 // indirect
 	golang.conradwood.net/apis/framework v1.1.3630 // indirect
 	golang.conradwood.net/apis/getestservice v1.1.3630 // indirect
-	golang.conradwood.net/apis/goeasyops v1.1.3647 // indirect
+	golang.conradwood.net/apis/goeasyops v1.1.3682 // indirect
 	golang.conradwood.net/apis/grafanadata v1.1.3630 // indirect
 	golang.conradwood.net/apis/registry v1.1.3630 // indirect
 	golang.org/x/mod v0.22.0 // indirect
@@ -48,7 +48,7 @@ require (
 	golang.yacloud.eu/apis/faultindicator v1.1.3630 // indirect
 	golang.yacloud.eu/apis/fscache v1.1.3630 // indirect
 	golang.yacloud.eu/apis/protorenderer2 v1.1.3630 // indirect
-	golang.yacloud.eu/apis/session v1.1.3647 // indirect
+	golang.yacloud.eu/apis/session v1.1.3682 // indirect
 	golang.yacloud.eu/apis/unixipc v1.1.3630 // indirect
 	golang.yacloud.eu/apis/urlcacher v1.1.3630 // indirect
 	golang.yacloud.eu/unixipc v0.1.31725 // indirect
