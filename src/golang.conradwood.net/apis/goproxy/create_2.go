@@ -4,7 +4,7 @@
 */
 
 /* geninfo:
-   filename  : protos/golang.conradwood.net/apis/goproxy/goproxy.proto
+   filename  : golang.conradwood.net/apis/goproxy/goproxy.proto
    gopackage : golang.conradwood.net/apis/goproxy
    importname: ai_1
    clientfunc: GetGoProxyTestRunner
@@ -51,8 +51,3 @@ func init() {
    client.RegisterDependency("goproxy.GoProxyTestRunner")
    AddService("goproxy.GoProxyTestRunner")
 }
-
-
-
-
-

@@ -11,7 +11,7 @@ require (
 	golang.conradwood.net/apis/common v1.1.3833
 	golang.conradwood.net/apis/gitserver v1.1.3785
 	golang.conradwood.net/apis/goproxy v1.1.1877
-	golang.conradwood.net/apis/h2gproxy v1.1.3785
+	golang.conradwood.net/apis/h2gproxy v1.1.3833
 	golang.conradwood.net/apis/objectstore v1.1.3785
 	golang.conradwood.net/go-easyops v0.1.35313
 	golang.yacloud.eu/apis/protomanager v1.1.3785
