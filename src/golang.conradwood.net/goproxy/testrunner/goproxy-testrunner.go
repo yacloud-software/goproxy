@@ -61,6 +61,7 @@ type echoServer struct {
 func main() {
 	var err error
 	flag.Parse()
+   server.SetHealth(common.Health_STARTING)
 	if *trigger {
 		Trigger()
 		os.Exit(0)
@@ -71,6 +72,7 @@ func main() {
 	go testrunner()
 	sd := server.NewServerDef()
 	sd.SetPort(*port)
+sd.SetOnStartupCallback(startup)
 	sd.SetRegister(server.Register(
 		func(server *grpc.Server) error {
 			e := new(echoServer)
@@ -82,6 +84,10 @@ func main() {
 	utils.Bail("Unable to start server", err)
 	os.Exit(0)
 }
+func startup() {
+	server.SetHealth(common.Health_READY)
+}
+
 
 func testrunner() {
 	t := time.Duration(2) * time.Second
@@ -157,6 +163,8 @@ func Trigger() {
 	utils.Bail("failed to trigger", err)
 	fmt.Printf("Triggered\n")
 }
+
+
 
 
 

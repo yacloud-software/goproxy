@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/goproxy/goproxy"
+	"golang.conradwood.net/apis/common"
 	pb "golang.conradwood.net/apis/goproxy"
 	h2g "golang.conradwood.net/apis/h2gproxy"
 	"golang.conradwood.net/go-easyops/auth"
@@ -61,7 +62,7 @@ var (
 type echoServer struct {
 }
 type SingleRequest struct {
-	Prefix  string // for printing
+	Prefix  string
 	Started time.Time
 	mi      *pb.ModuleInfo
 	reqtype string
@@ -96,24 +97,13 @@ func (sr *SingleRequest) Printf(format string, args ...interface{}) {
 func main() {
 	var err error
 	flag.Parse()
+	server.SetHealth(common.Health_STARTING)
 	fmt.Printf("Starting GoProxyServer...\n")
 	prometheus.MustRegister(timsummary, failCounter, totalCounter)
-	/*
-		gopr = &goproxy.Goproxy{}
-		gopr.Cacher = &cacher.GoCacher{}
-		gopr.GoBinEnv = goenv()
-		//	gopr.Cacher = nil
-		go func() {
-			adr := fmt.Sprintf(":%d", *http_port)
-			err := http.ListenAndServe(adr, gopr)
-			utils.Bail("failed to start http server", err)
-		}()
-		sd := server.NewHTMLServerDef("goproxy.GoProxy")
-		sd.SetPort(*http_port)
-		server.AddRegistry(sd)
-	*/
+
 	sd := server.NewServerDef()
 	sd.SetPort(*port)
+	sd.SetOnStartupCallback(startup)
 	sd.SetRegister(server.Register(
 		func(server *grpc.Server) error {
 			e := new(echoServer)
@@ -125,6 +115,9 @@ func main() {
 	utils.Bail("Unable to start server", err)
 	os.Exit(0)
 }
+func startup() {
+	server.SetHealth(common.Health_READY)
+}
 
 func goenv() []string {
 	res := []string{
@@ -134,9 +127,6 @@ func goenv() []string {
 	return res
 }
 
-/************************************
-* grpc functions
-************************************/
 func (e *echoServer) AnalyseURL(ctx context.Context, req *pb.ModuleInfoRequest) (*pb.ModuleInfo, error) {
 	return nil, nil
 }
@@ -213,9 +203,9 @@ func (e *echoServer) streamHTTP(req *h2g.StreamRequest, srv streamer) error {
 	} else if strings.HasSuffix(path, ".mod") {
 		sr.reqtype = "mod"
 	} else {
-		// must be notfound so that go tries to download alternative paths
+
 		sr.Printf("Path not found (%s)\n", path)
-		sendError(srv, 404) //		err = errors.NotFound(ctx, "invalid path \"%s\"", req.Path)
+		sendError(srv, 404)
 		return nil
 	}
 
@@ -283,8 +273,8 @@ func (e *echoServer) streamHTTP(req *h2g.StreamRequest, srv streamer) error {
 	} else if sr.reqtype == "mod" {
 		err = sr.serveMod(handler, req, srv)
 	} else {
-		// must be notfound so that go tries to download alternative paths
-		sendError(srv, 404) //		err = errors.NotFound(ctx, "invalid path \"%s\"", req.Path)
+
+		sendError(srv, 404)
 	}
 	if err != nil {
 		failCounter.With(sr.promLabels()).Inc()
@@ -330,7 +320,6 @@ func versionFromPath(ctx context.Context, path string) (string, error) {
 	return version_string, nil
 }
 
-// serve requests suffixed by /@v/[version].mod
 func (sr *SingleRequest) serveMod(handler handlers.Handler, req *h2g.StreamRequest, srv streamer) error {
 	ctx := srv.Context()
 	version_string, err := versionFromPath(ctx, req.Path)
@@ -354,7 +343,6 @@ func (sr *SingleRequest) serveMod(handler handlers.Handler, req *h2g.StreamReque
 	return sendBytes(srv, b)
 }
 
-// serve requests suffixed by /@v/[version].zip
 func (sr *SingleRequest) serveZip(handler handlers.Handler, req *h2g.StreamRequest, srv streamer) error {
 	ctx := srv.Context()
 	version_string, err := versionFromPath(ctx, req.Path)
@@ -387,7 +375,6 @@ func (sr *SingleRequest) serveZip(handler handlers.Handler, req *h2g.StreamReque
 	return nil
 }
 
-// serve requests suffixed by /@v/[version].info
 func (sr *SingleRequest) serveInfo(handler handlers.Handler, req *h2g.StreamRequest, srv streamer) error {
 	sr.Printf("Serving version for \"%s\"\n", req.Path)
 	ctx := srv.Context()
@@ -400,8 +387,6 @@ func (sr *SingleRequest) serveInfo(handler handlers.Handler, req *h2g.StreamRequ
 	return sendBytes(srv, []byte(res))
 }
 
-// serve requests suffixed by /@v/latest
-// if handler throws an error, serve from cache (only then, always try to make http request)
 func (sr *SingleRequest) serveLatest(handler handlers.Handler, req *h2g.StreamRequest, srv streamer) error {
 	sr.Printf("Serving latest for \"%s\"\n", req.Path)
 	ctx := srv.Context()
@@ -434,8 +419,6 @@ func (sr *SingleRequest) serveLatest(handler handlers.Handler, req *h2g.StreamRe
 	return nil
 }
 
-// serve requests suffixed by /@v/list
-// if handler throws an error, serve from cache (only then, always try to make http request)
 func (sr *SingleRequest) serveList(handler handlers.Handler, req *h2g.StreamRequest, srv streamer) error {
 	sr.Printf("Serving list for \"%s\" from %v\n", req.Path, handler.ModuleInfo().ModuleType)
 	started := time.Now()
