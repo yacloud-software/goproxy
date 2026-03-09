@@ -63,7 +63,7 @@ func (af *afhandler) verify_has_file(ctx context.Context, build, artefactid uint
 	ds, err := artefact.GetArtefactClient().GetDirListing(ctx, dlr)
 
 	if err != nil {
-		af.Printf("Build #%d does not have a module in \"%s\" (%s)\n", build, dlr.Dir, errors.ErrorString(err))
+		af.Printf("Build #%d does not have a module in \"%s\" (%s %s)\n", build, dlr.Dir, err, errors.ErrorString(err))
 		return false, nil
 	}
 	if len(ds.Files) == 0 {
