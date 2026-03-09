@@ -5,6 +5,12 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"io"
+	"sort"
+	"strconv"
+	"strings"
+	"time"
+
 	artefact "golang.conradwood.net/apis/artefact"
 	git "golang.conradwood.net/apis/gitserver"
 	pb "golang.conradwood.net/apis/goproxy"
@@ -14,11 +20,6 @@ import (
 	"golang.conradwood.net/goproxy/cacher"
 	"golang.conradwood.net/goproxy/config"
 	"golang.conradwood.net/goproxy/hosts"
-	"io"
-	"sort"
-	"strconv"
-	"strings"
-	"time"
 )
 
 const (
@@ -216,14 +217,15 @@ func (af *afhandler) ListVersions(ctx context.Context) ([]*pb.VersionInfo, error
 	var res []*pb.VersionInfo
 	for _, b := range bl.Builds {
 		dir := MODULEDIR + af.modpath
-		hasmod, err := af.check_if_has_file(ctx, b, af.afresolved.afid.ID, dir)
+		c_dir := strings.TrimSuffix(dir, "@latest")
+		hasmod, err := af.check_if_has_file(ctx, b, af.afresolved.afid.ID, c_dir)
 
 		if err != nil {
 			af.Printf("Build #%d does not have a module in \"%s\" (%s)\n", b, dir, utils.ErrorString(err))
 			continue
 		}
 		if !hasmod {
-			af.Printf("Build #%d does not have the required files for modules in \"%s\"\n", b, dir)
+			af.Printf("Build #%d does not have the required file for modules in \"%s\"\n", b, dir)
 			continue
 		}
 		af.Printf("Build #%d added as module in \"%s\"\n", b, dir)
