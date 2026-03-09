@@ -2,6 +2,7 @@ package artefact
 
 import (
 	"context"
+	"flag"
 	"fmt"
 
 	artefact "golang.conradwood.net/apis/artefact"
@@ -14,8 +15,9 @@ import (
 )
 
 var (
-	af_mod_cache  = cache.New("artefact_is_mod_cache", time.Duration(24)*time.Hour, 1000)
-	max_neg_cache = time.Duration(30) * time.Second
+	enable_filecheck_cache = flag.Bool("filecheck_cache", true, "if true, cache result of lookup in artefact server")
+	af_mod_cache           = cache.New("artefact_is_mod_cache", time.Duration(24)*time.Hour, 1000)
+	max_neg_cache          = time.Duration(30) * time.Second
 )
 
 type af_mod_cache_entry struct {
@@ -26,11 +28,13 @@ type af_mod_cache_entry struct {
 
 func (af *afhandler) check_if_has_file(ctx context.Context, build, artefactid uint64, filename string) (bool, error) {
 	key := fmt.Sprintf("%d_%d_%s", build, artefactid, filename)
-	or := af_mod_cache.Get(key)
-	if or != nil {
-		of := or.(*af_mod_cache_entry)
-		if of.err == nil || time.Since(of.created) < max_neg_cache {
-			return of.res, of.err
+	if *enable_filecheck_cache {
+		or := af_mod_cache.Get(key)
+		if or != nil {
+			of := or.(*af_mod_cache_entry)
+			if of.err == nil || time.Since(of.created) < max_neg_cache {
+				return of.res, of.err
+			}
 		}
 	}
 	b, err := af.verify_has_file(ctx, build, artefactid, filename)
