@@ -3,11 +3,14 @@ package artefact
 import (
 	"context"
 	"fmt"
+
 	artefact "golang.conradwood.net/apis/artefact"
+
 	// pb "golang.conradwood.net/apis/goproxy"
+	"time"
+
 	"golang.conradwood.net/go-easyops/cache"
 	"golang.conradwood.net/go-easyops/utils"
-	"time"
 )
 
 var (
@@ -22,7 +25,7 @@ type af_mod_cache_entry struct {
 }
 
 func (af *afhandler) check_if_has_file(ctx context.Context, build, artefactid uint64, filename string) (bool, error) {
-	key := fmt.Sprintf("%d_%d", build, artefactid)
+	key := fmt.Sprintf("%d_%d_%s", build, artefactid, filename)
 	or := af_mod_cache.Get(key)
 	if or != nil {
 		of := or.(*af_mod_cache_entry)
@@ -67,8 +70,3 @@ func (af *afhandler) verify_has_file(ctx context.Context, build, artefactid uint
 	return true, nil
 
 }
-
-
-
-
-
