@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/goproxy/goproxy"
+	au "golang.conradwood.net/apis/auth"
 	"golang.conradwood.net/apis/common"
 	pb "golang.conradwood.net/apis/goproxy"
 	h2g "golang.conradwood.net/apis/h2gproxy"
@@ -66,6 +67,7 @@ type SingleRequest struct {
 	Started time.Time
 	mi      *pb.ModuleInfo
 	reqtype string
+	user    *au.User
 }
 
 func (sr *SingleRequest) promLabels() prometheus.Labels {
@@ -85,11 +87,18 @@ func (sr *SingleRequest) Printf(format string, args ...interface{}) {
 	if !*verbose {
 		return
 	}
+	if sr.user != nil && sr.user.ID == "" {
+		return
+	}
 	mis := ""
 	if sr.mi != nil {
 		mis = fmt.Sprintf("%v ", sr.mi.ModuleType)
 	}
-	pre := fmt.Sprintf("[%s %s%0.2fs] ", sr.Prefix, mis, time.Since(sr.Started).Seconds())
+	us := "nouser"
+	if sr.user != nil {
+		us = auth.UserIDString(sr.user)
+	}
+	pre := fmt.Sprintf("[%s %s%0.2fs %s] ", sr.Prefix, mis, time.Since(sr.Started).Seconds(), us)
 	sn := fmt.Sprintf(format, args...)
 	fmt.Print(pre + sn)
 }
@@ -173,6 +182,7 @@ func (e *echoServer) streamHTTP(req *h2g.StreamRequest, srv streamer) error {
 		}
 		return errors.Unauthenticated(ctx, "login required")
 	}
+	sr.user = u
 	path := strings.TrimPrefix(req.Path, "/")
 	sr.Printf("Access to path \"%s\" by %s\n", path, auth.Description(u))
 
