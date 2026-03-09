@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"golang.conradwood.net/go-easyops/cache"
-	"golang.conradwood.net/go-easyops/utils"
+	"golang.conradwood.net/go-easyops/errors"
 )
 
 var (
@@ -63,7 +63,7 @@ func (af *afhandler) verify_has_file(ctx context.Context, build, artefactid uint
 	ds, err := artefact.GetArtefactClient().GetDirListing(ctx, dlr)
 
 	if err != nil {
-		af.Printf("Build #%d does not have a module in \"%s\" (%s)\n", build, dlr.Dir, utils.ErrorString(err))
+		af.Printf("Build #%d does not have a module in \"%s\" (%s)\n", build, dlr.Dir, errors.ErrorString(err))
 		return false, nil
 	}
 	if len(ds.Files) == 0 {
